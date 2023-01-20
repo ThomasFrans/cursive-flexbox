@@ -2,7 +2,9 @@ use std::{cell::RefCell, rc::{Weak, Rc}};
 
 use cursive_core::{view::IntoBoxedView, Rect, Vec2, View, XY};
 
-/// The direction of the main axis.
+// https://developer.mozilla.org/en-US/docs/Web/CSS/flex-direction
+// https://w3c.github.io/csswg-drafts/css-flexbox/#flex-direction-property
+/// Direction of a flex container's main axis.
 #[derive(Debug, Default, Clone, Copy, PartialEq)]
 pub enum FlexDirection {
     /// Lay out the items in a row.
@@ -16,6 +18,9 @@ pub enum FlexDirection {
     ColumnReverse,
 }
 
+// https://developer.mozilla.org/en-US/docs/Web/CSS/flex-wrap
+// https://w3c.github.io/csswg-drafts/css-flexbox/#flex-wrap-property
+/// Wrapping behavior and direction of the cross axis of a flexbox.
 #[derive(Debug, Default, Clone, Copy, PartialEq)]
 pub enum FlexWrap {
     /// Don't wrap items.
@@ -27,7 +32,9 @@ pub enum FlexWrap {
     WrapReverse,
 }
 
-/// Alignment of items along the main axis.
+// https://developer.mozilla.org/en-US/docs/Web/CSS/justify-content
+// https://w3c.github.io/csswg-drafts/css-flexbox/#propdef-justify-content
+/// Alignment of items in a flexbox along the main axis.
 #[derive(Debug, Default, Clone, Copy, PartialEq)]
 pub enum JustifyContent {
     /// Justify items at the start of the container.
@@ -45,6 +52,9 @@ pub enum JustifyContent {
     SpaceEvenly,
 }
 
+// https://developer.mozilla.org/en-US/docs/Web/CSS/align-items
+// https://w3c.github.io/csswg-drafts/css-flexbox/#align-items-property
+/// Alignment of items in a flexbox along the cross axis.
 #[derive(Debug, Default, Clone, Copy, PartialEq)]
 pub enum AlignItems {
     /// Align items at the start of the secondary axis.
@@ -58,7 +68,9 @@ pub enum AlignItems {
     Stretch,
 }
 
-/// Alignment of content along the secondary axis.
+// https://developer.mozilla.org/en-US/docs/Web/CSS/align-content
+// https://w3c.github.io/csswg-drafts/css-flexbox/#align-content-property
+/// Alignment of the main axes in a flexbox.
 #[derive(Debug, Default, Clone, Copy, PartialEq)]
 pub enum AlignContent {
     /// Align content to the start of the container.
@@ -76,20 +88,11 @@ pub enum AlignContent {
     SpaceAround,
 }
 
-#[derive(Debug, Default, Clone, Copy, PartialEq)]
-enum FlexItemSize {
-    #[default]
-    Auto,
-    Fixed(u16),
-    Percent(u8),
-}
-
 struct FlexItem {
     /// The proportion of extra space in the container along the main axis that should be given to
     /// this item.
     /// https://css-tricks.com/snippets/css/a-guide-to-flexbox/#aa-flex-grow
     flex_grow: u8,
-    flex_basis: FlexItemSize,
     view: Box<dyn View>,
 }
 
@@ -101,25 +104,16 @@ struct FlexBoxOptions {
     /// Algorithm that assigns extra space on the main axis. This does nothing if any of the items
     /// on a main axis request to grow.
     justification: JustifyContent,
+    /// How to place items on the cross axis.
+    item_alignment: AlignItems,
+    /// How to place the main axes in the container.
+    axes_alignment: AlignContent,
     /// Gap between items on the main axis. The gap doesn't get added to the sides.
     main_axis_gap: u16,
     /// Gap between the main axes.
     cross_axis_gap: u16,
     /// Wrapping behavior of the main axes.
     wrap: FlexWrap,
-}
-
-/// A container that can be used to display a list of items in a flexible way.
-pub struct FlexBox {
-    /// The content of the flexbox. Unlike some flexboxes, order is always dictated by the order of
-    /// the items in `content`. There is no way to overwrite this.
-    content: Vec<Rc<RefCell<FlexItem>>>,
-    /// The currently active view.
-    active: Option<usize>,
-    /// Options to alter the behavior.
-    options: FlexBoxOptions,
-    /// The actual layout of the items.
-    layout: Rc<RefCell<Layout>>,
 }
 
 /// An actual layout of a flexbox with real dimensions.
@@ -483,7 +477,6 @@ where
             .into_iter()
             .map(|item| Rc::new(RefCell::new(FlexItem {
                 flex_grow: 0,
-                flex_basis: FlexItemSize::Auto,
                 view: item.into_boxed_view(),
             })))
             .collect();
@@ -492,6 +485,19 @@ where
             ..Default::default()
         }
     }
+}
+
+/// A container that can be used to display a list of items in a flexible way.
+pub struct FlexBox {
+    /// The content of the flexbox. Unlike some flexboxes, order is always dictated by the order of
+    /// the items in `content`. There is no way to overwrite this.
+    content: Vec<Rc<RefCell<FlexItem>>>,
+    /// The currently active view.
+    active: Option<usize>,
+    /// Options to alter the behavior.
+    options: FlexBoxOptions,
+    /// The actual layout of the items.
+    layout: Rc<RefCell<Layout>>,
 }
 
 impl FlexBox {
@@ -509,6 +515,10 @@ impl FlexBox {
 
     pub fn set_justify_content(&mut self, justify_content: JustifyContent) {
         self.options.justification = justify_content;
+    }
+
+    pub fn set_align_items(&mut self, item_alignment: AlignItems) {
+        self.options.item_alignment = item_alignment;
     }
 
     pub fn set_direction(&mut self, direction: FlexDirection) {
