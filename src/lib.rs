@@ -270,18 +270,123 @@ impl MainAxis {
     pub fn windows(&self, layout: &Layout) -> Vec<(Rc<RefCell<FlexItem>>, Rect)> {
         let mut windows = Vec::new();
         let mut offset = 0;
+        let mut remaining_free_space = self.free_space;
 
-        for item in &self.items {
-            let upgraded_item = item.upgrade().unwrap();
-            match layout.options.direction {
-                FlexDirection::Row | FlexDirection::RowReverse => {
-                    windows.push((upgraded_item.clone(), Rect::from_size((offset, 0), RefCell::borrow_mut(&upgraded_item).view.required_size(layout.size))));
-                },
-                FlexDirection::Column | FlexDirection::ColumnReverse => {
-                    windows.push((upgraded_item.clone(), Rect::from_size((0, offset), RefCell::borrow_mut(&upgraded_item).view.required_size(layout.size))));
-                },
-            }
-            offset += layout.flexitem_main_axis_size(&mut RefCell::borrow_mut(&upgraded_item)) + layout.options.main_axis_gap as usize;
+        match layout.options.justification {
+            JustifyContent::FlexStart => {
+                for item in &self.items {
+                    let upgraded_item = item.upgrade().unwrap();
+
+                    match layout.options.direction {
+                        FlexDirection::Row | FlexDirection::RowReverse => {
+                            windows.push((upgraded_item.clone(), Rect::from_size((offset, 0), RefCell::borrow_mut(&upgraded_item).view.required_size(layout.size))));
+                        },
+                        FlexDirection::Column | FlexDirection::ColumnReverse => {
+                            windows.push((upgraded_item.clone(), Rect::from_size((0, offset), RefCell::borrow_mut(&upgraded_item).view.required_size(layout.size))));
+                        },
+                    }
+                    offset += layout.flexitem_main_axis_size(&mut RefCell::borrow_mut(&upgraded_item)) + layout.options.main_axis_gap as usize;
+                }
+
+			},
+            JustifyContent::FlexEnd => {
+                offset += remaining_free_space;
+                for item in &self.items {
+                    let upgraded_item = item.upgrade().unwrap();
+
+                    match layout.options.direction {
+                        FlexDirection::Row | FlexDirection::RowReverse => {
+                            windows.push((upgraded_item.clone(), Rect::from_size((offset, 0), RefCell::borrow_mut(&upgraded_item).view.required_size(layout.size))));
+                        },
+                        FlexDirection::Column | FlexDirection::ColumnReverse => {
+                            windows.push((upgraded_item.clone(), Rect::from_size((0, offset), RefCell::borrow_mut(&upgraded_item).view.required_size(layout.size))));
+                        },
+                    }
+                    offset += layout.flexitem_main_axis_size(&mut RefCell::borrow_mut(&upgraded_item)) + layout.options.main_axis_gap as usize;
+                }
+			},
+            JustifyContent::Center => {
+                offset += remaining_free_space / 2;
+                for item in &self.items {
+                    let upgraded_item = item.upgrade().unwrap();
+
+                    match layout.options.direction {
+                        FlexDirection::Row | FlexDirection::RowReverse => {
+                            windows.push((upgraded_item.clone(), Rect::from_size((offset, 0), RefCell::borrow_mut(&upgraded_item).view.required_size(layout.size))));
+                        },
+                        FlexDirection::Column | FlexDirection::ColumnReverse => {
+                            windows.push((upgraded_item.clone(), Rect::from_size((0, offset), RefCell::borrow_mut(&upgraded_item).view.required_size(layout.size))));
+                        },
+                    }
+                    offset += layout.flexitem_main_axis_size(&mut RefCell::borrow_mut(&upgraded_item)) + layout.options.main_axis_gap as usize;
+                }
+
+			},
+            JustifyContent::SpaceBetween => {
+                let mut amount_of_spaces_to_fill = self.number_of_items().saturating_sub(1);
+                for item in &self.items {
+                    let upgraded_item = item.upgrade().unwrap();
+                    match layout.options.direction {
+                        FlexDirection::Row | FlexDirection::RowReverse => {
+                            windows.push((upgraded_item.clone(), Rect::from_size((offset, 0), RefCell::borrow_mut(&upgraded_item).view.required_size(layout.size))));
+                        },
+                        FlexDirection::Column | FlexDirection::ColumnReverse => {
+                            windows.push((upgraded_item.clone(), Rect::from_size((0, offset), RefCell::borrow_mut(&upgraded_item).view.required_size(layout.size))));
+                        },
+                    }
+
+                    let assigned_free_space = remaining_free_space.checked_div(amount_of_spaces_to_fill).unwrap_or(1);
+                    remaining_free_space = remaining_free_space.saturating_sub(assigned_free_space);
+                    amount_of_spaces_to_fill = amount_of_spaces_to_fill.saturating_sub(1);
+                    offset += layout.flexitem_main_axis_size(&mut RefCell::borrow_mut(&upgraded_item)) + layout.options.main_axis_gap as usize + assigned_free_space;
+                }
+			},
+            JustifyContent::SpaceAround => {
+                let mut amount_of_spaces_to_fill = self.number_of_items() * 2;
+                for item in &self.items {
+                    let upgraded_item = item.upgrade().unwrap();
+                    let mut assigned_free_space = remaining_free_space / amount_of_spaces_to_fill;
+                    remaining_free_space -= assigned_free_space;
+                    amount_of_spaces_to_fill -= 1;
+                    offset += assigned_free_space;
+                
+                    match layout.options.direction {
+                        FlexDirection::Row | FlexDirection::RowReverse => {
+                            windows.push((upgraded_item.clone(), Rect::from_size((offset, 0), RefCell::borrow_mut(&upgraded_item).view.required_size(layout.size))));
+                        },
+                        FlexDirection::Column | FlexDirection::ColumnReverse => {
+                            windows.push((upgraded_item.clone(), Rect::from_size((0, offset), RefCell::borrow_mut(&upgraded_item).view.required_size(layout.size))));
+                        },
+                    }
+
+                    assigned_free_space = remaining_free_space / amount_of_spaces_to_fill;
+                    remaining_free_space -= assigned_free_space;
+                    amount_of_spaces_to_fill -= 1;
+                    offset += layout.flexitem_main_axis_size(&mut RefCell::borrow_mut(&upgraded_item)) + layout.options.main_axis_gap as usize + assigned_free_space;
+                }
+			},
+            JustifyContent::SpaceEvenly => {
+                let mut amount_of_spaces_to_fill = self.number_of_items() + 1;
+                for item in &self.items {
+                    let upgraded_item = item.upgrade().unwrap();
+
+                    let assigned_free_space = remaining_free_space.checked_div(amount_of_spaces_to_fill).unwrap_or(1);
+                    remaining_free_space = remaining_free_space.saturating_sub(assigned_free_space);
+                    amount_of_spaces_to_fill = amount_of_spaces_to_fill.saturating_sub(1);
+                    offset += assigned_free_space;
+
+                    match layout.options.direction {
+                        FlexDirection::Row | FlexDirection::RowReverse => {
+                            windows.push((upgraded_item.clone(), Rect::from_size((offset, 0), RefCell::borrow_mut(&upgraded_item).view.required_size(layout.size))));
+                        },
+                        FlexDirection::Column | FlexDirection::ColumnReverse => {
+                            windows.push((upgraded_item.clone(), Rect::from_size((0, offset), RefCell::borrow_mut(&upgraded_item).view.required_size(layout.size))));
+                        },
+                    }
+
+                    offset += layout.flexitem_main_axis_size(&mut RefCell::borrow_mut(&upgraded_item)) + layout.options.main_axis_gap as usize;
+                }
+			},
         }
 
         windows
@@ -291,15 +396,15 @@ impl MainAxis {
     pub fn add_item(&mut self, item: Weak<RefCell<FlexItem>>, layout: &mut Layout) -> Result<(), FlexBoxError> {
         let upgraded_item = item.upgrade().unwrap();
         if self.can_accomodate(&mut RefCell::borrow_mut(&upgraded_item), layout) {
-            self.items.push(item);
+            self.free_space = self.free_space.saturating_sub(layout.flexitem_main_axis_size(&mut RefCell::borrow_mut(&upgraded_item)));
 
             // Only add gaps if there is already an item.
             if self.number_of_items() >= 1 {
-                self.free_space = self.free_space.saturating_sub(layout.flexitem_main_axis_size(&mut RefCell::borrow_mut(&upgraded_item))
-                    + layout.options.main_axis_gap as usize);
-            } else {
-                self.free_space = self.free_space.saturating_sub(layout.flexitem_main_axis_size(&mut RefCell::borrow_mut(&upgraded_item)));
+                self.free_space = self.free_space.saturating_sub(layout.options.main_axis_gap as usize);
             }
+
+            self.items.push(item);
+
             Ok(())
         } else {
             Err(FlexBoxError::AxisFull)
@@ -317,13 +422,11 @@ impl MainAxis {
             // Each main axis must be able to hold at least one item!
             true
         } else {
-            let mut extra_used_space = layout.flexitem_main_axis_size(item);
-
-            // Only add added gapsize if there is already an item.
-            if self.number_of_items() >= 1 {
-                extra_used_space += layout.options.main_axis_gap as usize;
-            }
-
+            let extra_used_space = if self.number_of_items() >= 1 {
+                layout.flexitem_main_axis_size(item) + layout.options.main_axis_gap as usize
+            } else {
+                layout.flexitem_main_axis_size(item)
+            };
             extra_used_space <= self.free_space
         }
     }

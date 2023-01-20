@@ -15,13 +15,13 @@ the CSS3 flexbox supports.
     - [ ] row-reverse
     - [x] column
     - [ ] column-reverse
-- [ ] justify-content
+- [x] justify-content
     - [x] start
-    - [ ] end
-    - [ ] center
-    - [ ] space-between
-    - [ ] space-around
-    - [ ] space-evenly
+    - [x] end
+    - [x] center
+    - [x] space-between
+    - [x] space-around
+    - [x] space-evenly
 - [ ] align-items
     - [x] start
     - [ ] end
