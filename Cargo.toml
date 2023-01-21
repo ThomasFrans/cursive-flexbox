@@ -10,3 +10,6 @@ repository = "https://github.com/ThomasFrans/cursive-flexbox"
 [dependencies]
 # Core cursive functionality needed to implement new cursive libraries.
 cursive_core = "0.3.7"
+
+[dev-dependencies]
+cursive = "0.20.0"
