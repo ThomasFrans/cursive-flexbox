@@ -1,0 +1,15 @@
+# Always put a comma after match blocks.
+match_block_trailing_comma = true
+
+# Always separate if-else over multiple lines.
+single_line_if_else_max_width = 0
+
+# Always separate struct fields over multiple lines.
+struct_lit_width = 0
+struct_variant_width = 0
+
+# Always use struct fields shorthand.
+use_field_init_shorthand = true
+
+# Always turn literal try! macro into ?.
+use_try_shorthand = true

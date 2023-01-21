@@ -197,13 +197,13 @@ impl Layout {
                         cross_offset += assignable_free_space;
                     }
                     assignable_free_space = 0;
-                }
+                },
                 AlignContent::FlexCenter => {
                     if assignable_free_space > 0 {
                         cross_offset += assignable_free_space / 2;
                     }
                     assignable_free_space = 0;
-                }
+                },
                 AlignContent::Stretch => {
                     let assigned_space =
                         assignable_free_space / (self.main_axes.len() - axis_index);
@@ -211,7 +211,7 @@ impl Layout {
                         cross_offset += assigned_space;
                     }
                     assignable_free_space -= assigned_space;
-                }
+                },
                 AlignContent::SpaceAround => {
                     let assigned_space =
                         assignable_free_space / (self.main_axes.len() * 2 - axis_index * 2);
@@ -219,17 +219,17 @@ impl Layout {
                         cross_offset += assigned_space;
                     }
                     assignable_free_space -= assigned_space;
-                }
-                _ => {}
+                },
+                _ => {},
             }
             for mut combo in axis.windows(self) {
                 match self.options.direction {
                     FlexDirection::Row | FlexDirection::RowReverse => {
                         combo.1.offset(XY::from((0, cross_offset)))
-                    }
+                    },
                     FlexDirection::Column | FlexDirection::ColumnReverse => {
                         combo.1.offset(XY::from((cross_offset, 0)))
-                    }
+                    },
                 }
                 windows.push(combo);
             }
@@ -243,7 +243,7 @@ impl Layout {
                         }
                         assignable_free_space -= assigned_space;
                     }
-                }
+                },
                 AlignContent::SpaceAround => {
                     let assigned_space =
                         assignable_free_space / (self.main_axes.len() * 2 - (axis_index * 2 + 1));
@@ -251,8 +251,8 @@ impl Layout {
                         cross_offset += assigned_space;
                     }
                     assignable_free_space -= assigned_space;
-                }
-                _ => {}
+                },
+                _ => {},
             }
             cross_offset += axis.cross_axis_size(self);
         }
@@ -271,10 +271,10 @@ impl Layout {
         match self.options.direction {
             FlexDirection::Row | FlexDirection::RowReverse => {
                 self.size.y.saturating_sub(used_space)
-            }
+            },
             FlexDirection::Column | FlexDirection::ColumnReverse => {
                 self.size.x.saturating_sub(used_space)
-            }
+            },
         }
     }
 
@@ -328,7 +328,7 @@ impl Layout {
             FlexDirection::Row | FlexDirection::RowReverse => item.view.required_size(self.size).x,
             FlexDirection::Column | FlexDirection::ColumnReverse => {
                 item.view.required_size(self.size).y
-            }
+            },
         }
     }
 }
@@ -349,10 +349,10 @@ impl MainAxis {
         let free_space = match RefCell::borrow(&layout_upgraded).options.direction {
             FlexDirection::Row | FlexDirection::RowReverse => {
                 RefCell::borrow(&layout_upgraded).size.x
-            }
+            },
             FlexDirection::Column | FlexDirection::ColumnReverse => {
                 RefCell::borrow(&layout_upgraded).size.y
-            }
+            },
         };
         MainAxis {
             items: Vec::new(),
@@ -374,7 +374,7 @@ impl MainAxis {
                             .y,
                     );
                 }
-            }
+            },
             FlexDirection::Column | FlexDirection::ColumnReverse => {
                 for item in &self.items {
                     maximum_item_cross_axis_size = maximum_item_cross_axis_size.max(
@@ -384,7 +384,7 @@ impl MainAxis {
                             .x,
                     );
                 }
-            }
+            },
         }
 
         maximum_item_cross_axis_size
@@ -423,10 +423,10 @@ impl MainAxis {
                 match layout.options.direction {
                     FlexDirection::Row | FlexDirection::RowReverse => {
                         width = RefCell::borrow_mut(&item).view.required_size(layout.size).x;
-                    }
+                    },
                     FlexDirection::Column | FlexDirection::ColumnReverse => {
                         height = RefCell::borrow_mut(&item).view.required_size(layout.size).y;
-                    }
+                    },
                 }
 
                 // Decides `start_x`, `width` is item's preferred width.
@@ -435,15 +435,15 @@ impl MainAxis {
                         match layout.options.direction {
                             FlexDirection::Row | FlexDirection::RowReverse => {
                                 start_x = offset;
-                            }
+                            },
                             FlexDirection::Column | FlexDirection::ColumnReverse => {
                                 start_y = offset;
-                            }
+                            },
                         }
 
                         offset += layout.flexitem_main_axis_size(&mut RefCell::borrow_mut(&item))
                             + layout.options.main_axis_gap as usize;
-                    }
+                    },
                     JustifyContent::FlexEnd => {
                         if assignable_free_space > 0 {
                             offset = assignable_free_space;
@@ -452,15 +452,15 @@ impl MainAxis {
                         match layout.options.direction {
                             FlexDirection::Row | FlexDirection::RowReverse => {
                                 start_x = offset;
-                            }
+                            },
                             FlexDirection::Column | FlexDirection::ColumnReverse => {
                                 start_y = offset;
-                            }
+                            },
                         }
 
                         offset += layout.flexitem_main_axis_size(&mut RefCell::borrow_mut(&item))
                             + layout.options.main_axis_gap as usize;
-                    }
+                    },
                     JustifyContent::Center => {
                         if assignable_free_space > 0 {
                             offset = assignable_free_space / 2;
@@ -470,23 +470,23 @@ impl MainAxis {
                         match layout.options.direction {
                             FlexDirection::Row | FlexDirection::RowReverse => {
                                 start_x = offset;
-                            }
+                            },
                             FlexDirection::Column | FlexDirection::ColumnReverse => {
                                 start_y = offset;
-                            }
+                            },
                         }
 
                         offset += layout.flexitem_main_axis_size(&mut RefCell::borrow_mut(&item))
                             + layout.options.main_axis_gap as usize;
-                    }
+                    },
                     JustifyContent::SpaceBetween => {
                         match layout.options.direction {
                             FlexDirection::Row | FlexDirection::RowReverse => {
                                 start_x = offset;
-                            }
+                            },
                             FlexDirection::Column | FlexDirection::ColumnReverse => {
                                 start_y = offset;
-                            }
+                            },
                         }
 
                         if assignable_free_space > 0 && item_index + 1 < self.number_of_items() {
@@ -497,7 +497,7 @@ impl MainAxis {
                         }
                         offset += layout.flexitem_main_axis_size(&mut RefCell::borrow_mut(&item))
                             + layout.options.main_axis_gap as usize;
-                    }
+                    },
                     JustifyContent::SpaceAround => {
                         let mut extra_free_space =
                             assignable_free_space / (self.number_of_items() * 2 - item_index * 2);
@@ -509,10 +509,10 @@ impl MainAxis {
                         match layout.options.direction {
                             FlexDirection::Row | FlexDirection::RowReverse => {
                                 start_x = offset;
-                            }
+                            },
                             FlexDirection::Column | FlexDirection::ColumnReverse => {
                                 start_y = offset;
-                            }
+                            },
                         }
 
                         extra_free_space = assignable_free_space
@@ -524,7 +524,7 @@ impl MainAxis {
 
                         offset += layout.flexitem_main_axis_size(&mut RefCell::borrow_mut(&item))
                             + layout.options.main_axis_gap as usize;
-                    }
+                    },
                     JustifyContent::SpaceEvenly => {
                         let extra_free_space =
                             assignable_free_space / (self.number_of_items() + 1 - item_index);
@@ -536,15 +536,15 @@ impl MainAxis {
                         match layout.options.direction {
                             FlexDirection::Row | FlexDirection::RowReverse => {
                                 start_x = offset;
-                            }
+                            },
                             FlexDirection::Column | FlexDirection::ColumnReverse => {
                                 start_y = offset;
-                            }
+                            },
                         }
 
                         offset += layout.flexitem_main_axis_size(&mut RefCell::borrow_mut(&item))
                             + layout.options.main_axis_gap as usize;
-                    }
+                    },
                 }
             }
 
@@ -555,41 +555,41 @@ impl MainAxis {
                     FlexDirection::Row | FlexDirection::RowReverse => {
                         start_y = 0;
                         height = RefCell::borrow_mut(&item).view.required_size(layout.size).y;
-                    }
+                    },
                     FlexDirection::Column | FlexDirection::ColumnReverse => {
                         start_x = 0;
                         width = RefCell::borrow_mut(&item).view.required_size(layout.size).x;
-                    }
+                    },
                 },
                 AlignItems::FlexEnd => match layout.options.direction {
                     FlexDirection::Row | FlexDirection::RowReverse => {
                         height = RefCell::borrow_mut(&item).view.required_size(layout.size).y;
                         start_y = cross_axis_size - height;
-                    }
+                    },
                     FlexDirection::Column | FlexDirection::ColumnReverse => {
                         width = RefCell::borrow_mut(&item).view.required_size(layout.size).x;
                         start_x = cross_axis_size - width;
-                    }
+                    },
                 },
                 AlignItems::Center => match layout.options.direction {
                     FlexDirection::Row | FlexDirection::RowReverse => {
                         height = RefCell::borrow_mut(&item).view.required_size(layout.size).y;
                         start_y = (cross_axis_size - height) / 2;
-                    }
+                    },
                     FlexDirection::Column | FlexDirection::ColumnReverse => {
                         width = RefCell::borrow_mut(&item).view.required_size(layout.size).x;
                         start_x = (cross_axis_size - width) / 2;
-                    }
+                    },
                 },
                 AlignItems::Stretch => match layout.options.direction {
                     FlexDirection::Row | FlexDirection::RowReverse => {
                         height = cross_axis_size;
                         start_y = 0;
-                    }
+                    },
                     FlexDirection::Column | FlexDirection::ColumnReverse => {
                         width = cross_axis_size;
                         start_x = 0;
-                    }
+                    },
                 },
             }
 
