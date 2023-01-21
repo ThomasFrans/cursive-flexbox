@@ -1,11 +1,58 @@
-use std::{cell::RefCell, rc::{Weak, Rc}};
+//! **Not ready for use: Unfinished implementation and unstable API.**
+//!
+//! A library that allows the user to create a flexbox for the Rust Cursive TUI library. This
+//! library tries to adhere to the CSS3 specification of the flexbox as much as possible. Users who
+//! are already familiar with it should feel right at home working with this implementation.
+//!
+//! ### Example 1
+//! ```
+//! let mut flexbox = FlexBox::from([
+//!     Panel::new(Layer::with_color(
+//!         TextView::new(
+//!             "This is one quick line.\nHi another time :)\nAnd yet another time...",
+//!         ),
+//!         ColorStyle::back(cursive::theme::BaseColor::Green.dark()),
+//!     )),
+//!     Panel::new(Layer::with_color(
+//!         TextView::new("And another line just for fun."),
+//!         ColorStyle::back(cursive::theme::BaseColor::Green.dark()),
+//!     )),
+//!     Panel::new(Layer::with_color(
+//!         TextView::new("Yes I think yet another is fine.\nJust for fun!"),
+//!         ColorStyle::back(cursive::theme::BaseColor::Green.dark()),
+//!     )),
+//!     Panel::new(Layer::with_color(
+//!         TextView::new("We're just testing things here...\n1\n2\n3"),
+//!         ColorStyle::back(cursive::theme::BaseColor::Green.dark()),
+//!     )),
+//!     Panel::new(Layer::with_color(
+//!         TextView::new("That should be enough."),
+//!         ColorStyle::back(cursive::theme::BaseColor::Green.dark()),
+//!     )),
+//! ]);
+//! flexbox.set_main_axis_gap(0);
+//! flexbox.set_wrap(FlexWrap::Wrap);
+//! flexbox.set_justify_content(JustifyContent::SpaceEvenly);
+//! flexbox.set_align_items(AlignItems::Center);
+//! flexbox.set_align_content(AlignContent::SpaceAround);
+//! flexbox.set_direction(FlexDirection::Row);
 
-use cursive_core::{view::IntoBoxedView, Rect, Vec2, View, XY};
+//! ui.ui.add_fullscreen_layer(flexbox);
+//! ```
+
+#![warn(missing_docs)]
+
+use std::{
+    cell::RefCell,
+    rc::{Rc, Weak},
+};
+
+use cursive_core::{event::EventResult, view::IntoBoxedView, Rect, Vec2, View, XY};
 
 // https://developer.mozilla.org/en-US/docs/Web/CSS/flex-direction
 // https://w3c.github.io/csswg-drafts/css-flexbox/#flex-direction-property
 /// Direction of a flex container's main axis.
-#[derive(Debug, Default, Clone, Copy, PartialEq)]
+#[derive(Debug, Default, Clone, Copy, PartialEq, Eq)]
 pub enum FlexDirection {
     /// Lay out the items in a row.
     #[default]
@@ -21,12 +68,12 @@ pub enum FlexDirection {
 // https://developer.mozilla.org/en-US/docs/Web/CSS/flex-wrap
 // https://w3c.github.io/csswg-drafts/css-flexbox/#flex-wrap-property
 /// Wrapping behavior and direction of the cross axis of a flexbox.
-#[derive(Debug, Default, Clone, Copy, PartialEq)]
+#[derive(Debug, Default, Clone, Copy, PartialEq, Eq)]
 pub enum FlexWrap {
     /// Don't wrap items.
+    #[default]
     NoWrap,
     /// Wrap items along the secondary axis.
-    #[default]
     Wrap,
     /// Wrap items against the secondary axis.
     WrapReverse,
@@ -35,7 +82,7 @@ pub enum FlexWrap {
 // https://developer.mozilla.org/en-US/docs/Web/CSS/justify-content
 // https://w3c.github.io/csswg-drafts/css-flexbox/#propdef-justify-content
 /// Alignment of items in a flexbox along the main axis.
-#[derive(Debug, Default, Clone, Copy, PartialEq)]
+#[derive(Debug, Default, Clone, Copy, PartialEq, Eq)]
 pub enum JustifyContent {
     /// Justify items at the start of the container.
     #[default]
@@ -55,23 +102,23 @@ pub enum JustifyContent {
 // https://developer.mozilla.org/en-US/docs/Web/CSS/align-items
 // https://w3c.github.io/csswg-drafts/css-flexbox/#align-items-property
 /// Alignment of items in a flexbox along the cross axis.
-#[derive(Debug, Default, Clone, Copy, PartialEq)]
+#[derive(Debug, Default, Clone, Copy, PartialEq, Eq)]
 pub enum AlignItems {
     /// Align items at the start of the secondary axis.
-    #[default]
     FlexStart,
     /// Align items at the end of the secondery axis.
     FlexEnd,
     /// Align items at the center of the secondary axis.
     Center,
     /// Stretch items to fill all the space along the secondary axis.
+    #[default]
     Stretch,
 }
 
 // https://developer.mozilla.org/en-US/docs/Web/CSS/align-content
 // https://w3c.github.io/csswg-drafts/css-flexbox/#align-content-property
 /// Alignment of the main axes in a flexbox.
-#[derive(Debug, Default, Clone, Copy, PartialEq)]
+#[derive(Debug, Default, Clone, Copy, PartialEq, Eq)]
 pub enum AlignContent {
     /// Align content to the start of the container.
     #[default]
@@ -141,19 +188,94 @@ impl Layout {
     pub fn windows(&mut self) -> Vec<(Rc<RefCell<FlexItem>>, Rect)> {
         let mut windows = Vec::new();
         let mut cross_offset = 0;
+        let mut assignable_free_space = self.cross_axis_free_space();
 
-        for axis in &self.main_axes {
+        for (axis_index, axis) in self.main_axes.iter().enumerate() {
+            match self.options.axes_alignment {
+                AlignContent::FlexEnd => {
+                    if assignable_free_space > 0 {
+                        cross_offset += assignable_free_space;
+                    }
+                    assignable_free_space = 0;
+                }
+                AlignContent::FlexCenter => {
+                    if assignable_free_space > 0 {
+                        cross_offset += assignable_free_space / 2;
+                    }
+                    assignable_free_space = 0;
+                }
+                AlignContent::Stretch => {
+                    let assigned_space =
+                        assignable_free_space / (self.main_axes.len() - axis_index);
+                    if assignable_free_space > 0 {
+                        cross_offset += assigned_space;
+                    }
+                    assignable_free_space -= assigned_space;
+                }
+                AlignContent::SpaceAround => {
+                    let assigned_space =
+                        assignable_free_space / (self.main_axes.len() * 2 - axis_index * 2);
+                    if assignable_free_space > 0 {
+                        cross_offset += assigned_space;
+                    }
+                    assignable_free_space -= assigned_space;
+                }
+                _ => {}
+            }
             for mut combo in axis.windows(self) {
                 match self.options.direction {
-                    FlexDirection::Row | FlexDirection::RowReverse => combo.1.offset(XY::from((0, cross_offset))),
-                    FlexDirection::Column | FlexDirection::ColumnReverse => combo.1.offset(XY::from((cross_offset, 0))),
+                    FlexDirection::Row | FlexDirection::RowReverse => {
+                        combo.1.offset(XY::from((0, cross_offset)))
+                    }
+                    FlexDirection::Column | FlexDirection::ColumnReverse => {
+                        combo.1.offset(XY::from((cross_offset, 0)))
+                    }
                 }
                 windows.push(combo);
+            }
+            match self.options.axes_alignment {
+                AlignContent::SpaceBetween => {
+                    if assignable_free_space > 0 {
+                        let assigned_space =
+                            assignable_free_space / (self.main_axes.len() - axis_index - 1);
+                        if assignable_free_space > 0 {
+                            cross_offset += assigned_space;
+                        }
+                        assignable_free_space -= assigned_space;
+                    }
+                }
+                AlignContent::SpaceAround => {
+                    let assigned_space =
+                        assignable_free_space / (self.main_axes.len() * 2 - (axis_index * 2 + 1));
+                    if assignable_free_space > 0 {
+                        cross_offset += assigned_space;
+                    }
+                    assignable_free_space -= assigned_space;
+                }
+                _ => {}
             }
             cross_offset += axis.cross_axis_size(self);
         }
 
         windows
+    }
+
+    /// Return the amount of left over space on the cross axis.
+    pub fn cross_axis_free_space(&self) -> usize {
+        let mut used_space = 0;
+
+        for axis in &self.main_axes {
+            used_space += axis.cross_axis_size(self);
+        }
+
+        match self.options.direction {
+            FlexDirection::Row | FlexDirection::RowReverse => {
+                self.size.y.saturating_sub(used_space)
+            }
+            FlexDirection::Column | FlexDirection::ColumnReverse => {
+                self.size.x.saturating_sub(used_space)
+            }
+        }
     }
 
     /// Generate the actual layout for the flexbox with `content` and given `width` and `height`.
@@ -180,7 +302,8 @@ impl Layout {
             let mut main_axis = MainAxis::new(Rc::downgrade(&layout));
 
             loop {
-                let result = main_axis.add_item(content[added].clone(), &mut RefCell::borrow_mut(&layout));
+                let result =
+                    main_axis.add_item(content[added].clone(), &mut RefCell::borrow_mut(&layout));
                 if result.is_err() {
                     // If the current main axis couldn't hold the item anymore.
                     break;
@@ -202,15 +325,9 @@ impl Layout {
 
     pub fn flexitem_main_axis_size(&self, item: &mut FlexItem) -> usize {
         match self.options.direction {
-            FlexDirection::Row | FlexDirection::RowReverse => {
-                item.view
-                    .required_size(self.size)
-                    .x
-            }
+            FlexDirection::Row | FlexDirection::RowReverse => item.view.required_size(self.size).x,
             FlexDirection::Column | FlexDirection::ColumnReverse => {
-                item.view
-                    .required_size(self.size)
-                    .y
+                item.view.required_size(self.size).y
             }
         }
     }
@@ -230,12 +347,16 @@ impl MainAxis {
     pub fn new(layout: Weak<RefCell<Layout>>) -> Self {
         let layout_upgraded = layout.upgrade().unwrap();
         let free_space = match RefCell::borrow(&layout_upgraded).options.direction {
-                FlexDirection::Row | FlexDirection::RowReverse => RefCell::borrow(&layout_upgraded).size.x,
-                FlexDirection::Column | FlexDirection::ColumnReverse => RefCell::borrow(&layout_upgraded).size.y,
+            FlexDirection::Row | FlexDirection::RowReverse => {
+                RefCell::borrow(&layout_upgraded).size.x
+            }
+            FlexDirection::Column | FlexDirection::ColumnReverse => {
+                RefCell::borrow(&layout_upgraded).size.y
+            }
         };
         MainAxis {
             items: Vec::new(),
-            free_space
+            free_space,
         }
     }
 
@@ -244,16 +365,26 @@ impl MainAxis {
     pub fn cross_axis_size(&self, layout: &Layout) -> usize {
         let mut maximum_item_cross_axis_size = 0;
         match layout.options.direction {
-                FlexDirection::Row | FlexDirection::RowReverse => {
-                    for item in &self.items {
-                        maximum_item_cross_axis_size = maximum_item_cross_axis_size.max(RefCell::borrow_mut(&item.upgrade().unwrap()).view.required_size(layout.size).y);
-                    }
-                },
-                FlexDirection::Column | FlexDirection::ColumnReverse => {
-                    for item in &self.items {
-                        maximum_item_cross_axis_size = maximum_item_cross_axis_size.max(RefCell::borrow_mut(&item.upgrade().unwrap()).view.required_size(layout.size).x);
-                    }
-                },
+            FlexDirection::Row | FlexDirection::RowReverse => {
+                for item in &self.items {
+                    maximum_item_cross_axis_size = maximum_item_cross_axis_size.max(
+                        RefCell::borrow_mut(&item.upgrade().unwrap())
+                            .view
+                            .required_size(layout.size)
+                            .y,
+                    );
+                }
+            }
+            FlexDirection::Column | FlexDirection::ColumnReverse => {
+                for item in &self.items {
+                    maximum_item_cross_axis_size = maximum_item_cross_axis_size.max(
+                        RefCell::borrow_mut(&item.upgrade().unwrap())
+                            .view
+                            .required_size(layout.size)
+                            .x,
+                    );
+                }
+            }
         }
 
         maximum_item_cross_axis_size
@@ -264,137 +395,230 @@ impl MainAxis {
     pub fn windows(&self, layout: &Layout) -> Vec<(Rc<RefCell<FlexItem>>, Rect)> {
         let mut windows = Vec::new();
         let mut offset = 0;
-        let mut remaining_free_space = self.free_space;
+        let mut assignable_free_space = self.free_space;
+        let combined_grow_factor = self.combined_grow_factor();
+        let cross_axis_size = self.cross_axis_size(layout);
 
-        match layout.options.justification {
-            JustifyContent::FlexStart => {
-                for item in &self.items {
-                    let upgraded_item = item.upgrade().unwrap();
+        for (item_index, item) in self
+            .items
+            .iter()
+            .map(|item| item.upgrade().unwrap())
+            .enumerate()
+        {
+            let mut start_x = 0;
+            let mut start_y = 0;
+            let mut width = 1;
+            let mut height = 1;
 
-                    match layout.options.direction {
-                        FlexDirection::Row | FlexDirection::RowReverse => {
-                            windows.push((upgraded_item.clone(), Rect::from_size((offset, 0), RefCell::borrow_mut(&upgraded_item).view.required_size(layout.size))));
-                        },
-                        FlexDirection::Column | FlexDirection::ColumnReverse => {
-                            windows.push((upgraded_item.clone(), Rect::from_size((0, offset), RefCell::borrow_mut(&upgraded_item).view.required_size(layout.size))));
-                        },
+            if combined_grow_factor > 0 {
+                // Axis contains elements that want the free space. Give it to them, don't use
+                // justify-content.
+
+                // Decides `start_x` and `width`. Item's view `layout()` called with this
+                // calculated width later.
+            } else {
+                // Axis doesn't contain elements that want free space. Use justify-content property
+                // to decide positioning.
+
+                match layout.options.direction {
+                    FlexDirection::Row | FlexDirection::RowReverse => {
+                        width = RefCell::borrow_mut(&item).view.required_size(layout.size).x;
                     }
-                    offset += layout.flexitem_main_axis_size(&mut RefCell::borrow_mut(&upgraded_item)) + layout.options.main_axis_gap as usize;
+                    FlexDirection::Column | FlexDirection::ColumnReverse => {
+                        height = RefCell::borrow_mut(&item).view.required_size(layout.size).y;
+                    }
                 }
 
-			},
-            JustifyContent::FlexEnd => {
-                offset += remaining_free_space;
-                for item in &self.items {
-                    let upgraded_item = item.upgrade().unwrap();
+                // Decides `start_x`, `width` is item's preferred width.
+                match layout.options.justification {
+                    JustifyContent::FlexStart => {
+                        match layout.options.direction {
+                            FlexDirection::Row | FlexDirection::RowReverse => {
+                                start_x = offset;
+                            }
+                            FlexDirection::Column | FlexDirection::ColumnReverse => {
+                                start_y = offset;
+                            }
+                        }
 
-                    match layout.options.direction {
-                        FlexDirection::Row | FlexDirection::RowReverse => {
-                            windows.push((upgraded_item.clone(), Rect::from_size((offset, 0), RefCell::borrow_mut(&upgraded_item).view.required_size(layout.size))));
-                        },
-                        FlexDirection::Column | FlexDirection::ColumnReverse => {
-                            windows.push((upgraded_item.clone(), Rect::from_size((0, offset), RefCell::borrow_mut(&upgraded_item).view.required_size(layout.size))));
-                        },
+                        offset += layout.flexitem_main_axis_size(&mut RefCell::borrow_mut(&item))
+                            + layout.options.main_axis_gap as usize;
                     }
-                    offset += layout.flexitem_main_axis_size(&mut RefCell::borrow_mut(&upgraded_item)) + layout.options.main_axis_gap as usize;
-                }
-			},
-            JustifyContent::Center => {
-                offset += remaining_free_space / 2;
-                for item in &self.items {
-                    let upgraded_item = item.upgrade().unwrap();
+                    JustifyContent::FlexEnd => {
+                        if assignable_free_space > 0 {
+                            offset = assignable_free_space;
+                            assignable_free_space = 0;
+                        }
+                        match layout.options.direction {
+                            FlexDirection::Row | FlexDirection::RowReverse => {
+                                start_x = offset;
+                            }
+                            FlexDirection::Column | FlexDirection::ColumnReverse => {
+                                start_y = offset;
+                            }
+                        }
 
-                    match layout.options.direction {
-                        FlexDirection::Row | FlexDirection::RowReverse => {
-                            windows.push((upgraded_item.clone(), Rect::from_size((offset, 0), RefCell::borrow_mut(&upgraded_item).view.required_size(layout.size))));
-                        },
-                        FlexDirection::Column | FlexDirection::ColumnReverse => {
-                            windows.push((upgraded_item.clone(), Rect::from_size((0, offset), RefCell::borrow_mut(&upgraded_item).view.required_size(layout.size))));
-                        },
+                        offset += layout.flexitem_main_axis_size(&mut RefCell::borrow_mut(&item))
+                            + layout.options.main_axis_gap as usize;
                     }
-                    offset += layout.flexitem_main_axis_size(&mut RefCell::borrow_mut(&upgraded_item)) + layout.options.main_axis_gap as usize;
-                }
+                    JustifyContent::Center => {
+                        if assignable_free_space > 0 {
+                            offset = assignable_free_space / 2;
+                            assignable_free_space = 0;
+                        }
 
-			},
-            JustifyContent::SpaceBetween => {
-                let mut amount_of_spaces_to_fill = self.number_of_items().saturating_sub(1);
-                for item in &self.items {
-                    let upgraded_item = item.upgrade().unwrap();
-                    match layout.options.direction {
-                        FlexDirection::Row | FlexDirection::RowReverse => {
-                            windows.push((upgraded_item.clone(), Rect::from_size((offset, 0), RefCell::borrow_mut(&upgraded_item).view.required_size(layout.size))));
-                        },
-                        FlexDirection::Column | FlexDirection::ColumnReverse => {
-                            windows.push((upgraded_item.clone(), Rect::from_size((0, offset), RefCell::borrow_mut(&upgraded_item).view.required_size(layout.size))));
-                        },
+                        match layout.options.direction {
+                            FlexDirection::Row | FlexDirection::RowReverse => {
+                                start_x = offset;
+                            }
+                            FlexDirection::Column | FlexDirection::ColumnReverse => {
+                                start_y = offset;
+                            }
+                        }
+
+                        offset += layout.flexitem_main_axis_size(&mut RefCell::borrow_mut(&item))
+                            + layout.options.main_axis_gap as usize;
                     }
+                    JustifyContent::SpaceBetween => {
+                        match layout.options.direction {
+                            FlexDirection::Row | FlexDirection::RowReverse => {
+                                start_x = offset;
+                            }
+                            FlexDirection::Column | FlexDirection::ColumnReverse => {
+                                start_y = offset;
+                            }
+                        }
 
-                    let assigned_free_space = remaining_free_space.checked_div(amount_of_spaces_to_fill).unwrap_or(1);
-                    remaining_free_space = remaining_free_space.saturating_sub(assigned_free_space);
-                    amount_of_spaces_to_fill = amount_of_spaces_to_fill.saturating_sub(1);
-                    offset += layout.flexitem_main_axis_size(&mut RefCell::borrow_mut(&upgraded_item)) + layout.options.main_axis_gap as usize + assigned_free_space;
-                }
-			},
-            JustifyContent::SpaceAround => {
-                let mut amount_of_spaces_to_fill = self.number_of_items() * 2;
-                for item in &self.items {
-                    let upgraded_item = item.upgrade().unwrap();
-                    let mut assigned_free_space = remaining_free_space / amount_of_spaces_to_fill;
-                    remaining_free_space -= assigned_free_space;
-                    amount_of_spaces_to_fill -= 1;
-                    offset += assigned_free_space;
-                
-                    match layout.options.direction {
-                        FlexDirection::Row | FlexDirection::RowReverse => {
-                            windows.push((upgraded_item.clone(), Rect::from_size((offset, 0), RefCell::borrow_mut(&upgraded_item).view.required_size(layout.size))));
-                        },
-                        FlexDirection::Column | FlexDirection::ColumnReverse => {
-                            windows.push((upgraded_item.clone(), Rect::from_size((0, offset), RefCell::borrow_mut(&upgraded_item).view.required_size(layout.size))));
-                        },
+                        if assignable_free_space > 0 && item_index + 1 < self.number_of_items() {
+                            let extra_free_space = assignable_free_space
+                                / (self.number_of_items().saturating_sub(1 + item_index));
+                            assignable_free_space -= extra_free_space;
+                            offset += extra_free_space;
+                        }
+                        offset += layout.flexitem_main_axis_size(&mut RefCell::borrow_mut(&item))
+                            + layout.options.main_axis_gap as usize;
                     }
+                    JustifyContent::SpaceAround => {
+                        let mut extra_free_space =
+                            assignable_free_space / (self.number_of_items() * 2 - item_index * 2);
+                        if assignable_free_space > 0 {
+                            offset += extra_free_space;
+                        }
+                        assignable_free_space -= extra_free_space;
 
-                    assigned_free_space = remaining_free_space / amount_of_spaces_to_fill;
-                    remaining_free_space -= assigned_free_space;
-                    amount_of_spaces_to_fill -= 1;
-                    offset += layout.flexitem_main_axis_size(&mut RefCell::borrow_mut(&upgraded_item)) + layout.options.main_axis_gap as usize + assigned_free_space;
-                }
-			},
-            JustifyContent::SpaceEvenly => {
-                let mut amount_of_spaces_to_fill = self.number_of_items() + 1;
-                for item in &self.items {
-                    let upgraded_item = item.upgrade().unwrap();
+                        match layout.options.direction {
+                            FlexDirection::Row | FlexDirection::RowReverse => {
+                                start_x = offset;
+                            }
+                            FlexDirection::Column | FlexDirection::ColumnReverse => {
+                                start_y = offset;
+                            }
+                        }
 
-                    let assigned_free_space = remaining_free_space.checked_div(amount_of_spaces_to_fill).unwrap_or(1);
-                    remaining_free_space = remaining_free_space.saturating_sub(assigned_free_space);
-                    amount_of_spaces_to_fill = amount_of_spaces_to_fill.saturating_sub(1);
-                    offset += assigned_free_space;
+                        extra_free_space = assignable_free_space
+                            / (self.number_of_items() * 2 - (item_index * 2 + 1));
+                        if assignable_free_space > 0 {
+                            offset += extra_free_space;
+                        }
+                        assignable_free_space -= extra_free_space;
 
-                    match layout.options.direction {
-                        FlexDirection::Row | FlexDirection::RowReverse => {
-                            windows.push((upgraded_item.clone(), Rect::from_size((offset, 0), RefCell::borrow_mut(&upgraded_item).view.required_size(layout.size))));
-                        },
-                        FlexDirection::Column | FlexDirection::ColumnReverse => {
-                            windows.push((upgraded_item.clone(), Rect::from_size((0, offset), RefCell::borrow_mut(&upgraded_item).view.required_size(layout.size))));
-                        },
+                        offset += layout.flexitem_main_axis_size(&mut RefCell::borrow_mut(&item))
+                            + layout.options.main_axis_gap as usize;
                     }
+                    JustifyContent::SpaceEvenly => {
+                        let extra_free_space =
+                            assignable_free_space / (self.number_of_items() + 1 - item_index);
+                        if assignable_free_space > 0 {
+                            offset += extra_free_space;
+                        }
+                        assignable_free_space -= extra_free_space;
 
-                    offset += layout.flexitem_main_axis_size(&mut RefCell::borrow_mut(&upgraded_item)) + layout.options.main_axis_gap as usize;
+                        match layout.options.direction {
+                            FlexDirection::Row | FlexDirection::RowReverse => {
+                                start_x = offset;
+                            }
+                            FlexDirection::Column | FlexDirection::ColumnReverse => {
+                                start_y = offset;
+                            }
+                        }
+
+                        offset += layout.flexitem_main_axis_size(&mut RefCell::borrow_mut(&item))
+                            + layout.options.main_axis_gap as usize;
+                    }
                 }
-			},
+            }
+
+            // Decides `start_y` and `height`. Item's `layout()` called with this calculated height
+            // later.
+            match layout.options.item_alignment {
+                AlignItems::FlexStart => match layout.options.direction {
+                    FlexDirection::Row | FlexDirection::RowReverse => {
+                        start_y = 0;
+                        height = RefCell::borrow_mut(&item).view.required_size(layout.size).y;
+                    }
+                    FlexDirection::Column | FlexDirection::ColumnReverse => {
+                        start_x = 0;
+                        width = RefCell::borrow_mut(&item).view.required_size(layout.size).x;
+                    }
+                },
+                AlignItems::FlexEnd => match layout.options.direction {
+                    FlexDirection::Row | FlexDirection::RowReverse => {
+                        height = RefCell::borrow_mut(&item).view.required_size(layout.size).y;
+                        start_y = cross_axis_size - height;
+                    }
+                    FlexDirection::Column | FlexDirection::ColumnReverse => {
+                        width = RefCell::borrow_mut(&item).view.required_size(layout.size).x;
+                        start_x = cross_axis_size - width;
+                    }
+                },
+                AlignItems::Center => match layout.options.direction {
+                    FlexDirection::Row | FlexDirection::RowReverse => {
+                        height = RefCell::borrow_mut(&item).view.required_size(layout.size).y;
+                        start_y = (cross_axis_size - height) / 2;
+                    }
+                    FlexDirection::Column | FlexDirection::ColumnReverse => {
+                        width = RefCell::borrow_mut(&item).view.required_size(layout.size).x;
+                        start_x = (cross_axis_size - width) / 2;
+                    }
+                },
+                AlignItems::Stretch => match layout.options.direction {
+                    FlexDirection::Row | FlexDirection::RowReverse => {
+                        height = cross_axis_size;
+                        start_y = 0;
+                    }
+                    FlexDirection::Column | FlexDirection::ColumnReverse => {
+                        width = cross_axis_size;
+                        start_x = 0;
+                    }
+                },
+            }
+
+            RefCell::borrow_mut(&item)
+                .view
+                .layout((width, height).into());
+            windows.push((item, Rect::from_size((start_x, start_y), (width, height))));
         }
 
         windows
     }
 
     /// Try to add `item` to this main axis, fail if this axis can't accomodate the item.
-    pub fn add_item(&mut self, item: Weak<RefCell<FlexItem>>, layout: &mut Layout) -> Result<(), FlexBoxError> {
+    pub fn add_item(
+        &mut self,
+        item: Weak<RefCell<FlexItem>>,
+        layout: &mut Layout,
+    ) -> Result<(), FlexBoxError> {
         let upgraded_item = item.upgrade().unwrap();
         if self.can_accomodate(&mut RefCell::borrow_mut(&upgraded_item), layout) {
-            self.free_space = self.free_space.saturating_sub(layout.flexitem_main_axis_size(&mut RefCell::borrow_mut(&upgraded_item)));
+            self.free_space = self.free_space.saturating_sub(
+                layout.flexitem_main_axis_size(&mut RefCell::borrow_mut(&upgraded_item)),
+            );
 
             // Only add gaps if there is already an item.
             if self.number_of_items() >= 1 {
-                self.free_space = self.free_space.saturating_sub(layout.options.main_axis_gap as usize);
+                self.free_space = self
+                    .free_space
+                    .saturating_sub(layout.options.main_axis_gap as usize);
             }
 
             self.items.push(item);
@@ -430,41 +654,13 @@ impl MainAxis {
         self.items.len()
     }
 
-    /// The number of gaps between items.
-    pub fn number_of_gaps(&self) -> usize {
-        self.number_of_items().saturating_sub(1)
-    }
-
-    /// Total size taken up by gaps.
-    pub fn total_gaps_space(&self, layout: &mut Layout) -> usize {
-        self.number_of_gaps() * layout.options.main_axis_gap as usize
-    }
-
-    /// The total amount of cells on this axis. In practice, this will be the width for row
-    /// layouts, and height for column layouts.
-    pub fn total_space(&self, layout: &Layout) -> usize {
-        let direction_option = layout.options.direction;
-        match direction_option {
-            FlexDirection::Row | FlexDirection::RowReverse => layout.size.x,
-            FlexDirection::Column | FlexDirection::ColumnReverse => layout.size.y,
-        }
-    }
-
-    /// The amount of cells left on this axis after subtracting the space taken up by the items on
-    /// it plus the gaps.
-    pub fn free_space(&self) -> usize {
-        self.free_space
-    }
-}
-
-impl Default for FlexBox {
-    fn default() -> Self {
-        Self {
-            content: Vec::new(),
-            active: None,
-            options: Default::default(),
-            layout: Default::default(),
-        }
+    /// Sum of the flex-grow of all the [FlexItem]s in this axis.
+    pub fn combined_grow_factor(&self) -> usize {
+        let mut total_grow_factor = 0usize;
+        self.items.iter().for_each(|item| {
+            total_grow_factor += RefCell::borrow(&item.upgrade().unwrap()).flex_grow as usize
+        });
+        total_grow_factor
     }
 }
 
@@ -475,10 +671,12 @@ where
     fn from(value: T) -> Self {
         let content: Vec<Rc<RefCell<FlexItem>>> = value
             .into_iter()
-            .map(|item| Rc::new(RefCell::new(FlexItem {
-                flex_grow: 0,
-                view: item.into_boxed_view(),
-            })))
+            .map(|item| {
+                Rc::new(RefCell::new(FlexItem {
+                    flex_grow: 0,
+                    view: item.into_boxed_view(),
+                }))
+            })
             .collect();
         Self {
             content,
@@ -488,6 +686,7 @@ where
 }
 
 /// A container that can be used to display a list of items in a flexible way.
+#[derive(Default)]
 pub struct FlexBox {
     /// The content of the flexbox. Unlike some flexboxes, order is always dictated by the order of
     /// the items in `content`. There is no way to overwrite this.
@@ -501,30 +700,42 @@ pub struct FlexBox {
 }
 
 impl FlexBox {
+    /// Set the fixed gap between elements on the main axis.
     pub fn set_main_axis_gap(&mut self, gap: u16) {
         self.options.main_axis_gap = gap;
     }
 
+    /// Set the fixed gap between the main axes.
     pub fn set_cross_axis_gap(&mut self, gap: u16) {
         self.options.cross_axis_gap = gap;
     }
 
+    /// Set the grow factor of an item.
     pub fn set_grow(&mut self, index: usize, flex_grow: u8) {
         Rc::as_ref(&self.content[index]).borrow_mut().flex_grow = flex_grow;
     }
 
+    /// Set the justify-content option.
     pub fn set_justify_content(&mut self, justify_content: JustifyContent) {
         self.options.justification = justify_content;
     }
 
+    /// Set the align-items option.
     pub fn set_align_items(&mut self, item_alignment: AlignItems) {
         self.options.item_alignment = item_alignment;
     }
 
+    /// Set the align-content option.
+    pub fn set_align_content(&mut self, axes_alignment: AlignContent) {
+        self.options.axes_alignment = axes_alignment;
+    }
+
+    /// Set the direction of the main axis.
     pub fn set_direction(&mut self, direction: FlexDirection) {
         self.options.direction = direction;
     }
 
+    /// Set the wrapping behavior.
     pub fn set_wrap(&mut self, wrap: FlexWrap) {
         self.options.wrap = wrap;
     }
@@ -544,9 +755,8 @@ impl View for FlexBox {
     /// the printer given to `draw()`. This should call layout on all child items with their
     /// respective sizes.
     fn layout(&mut self, printer_size: Vec2) {
-        let items: Vec<Weak<RefCell<FlexItem>>> = self.content.clone().iter()
-            .map(|item| Rc::downgrade(item))
-            .collect();
+        let items: Vec<Weak<RefCell<FlexItem>>> =
+            self.content.clone().iter().map(Rc::downgrade).collect();
         self.layout = Layout::generate(
             &items,
             printer_size.x,
@@ -564,12 +774,26 @@ impl View for FlexBox {
             && self.active == RefCell::borrow(&self.layout).active
             && self.options.cross_axis_gap == RefCell::borrow(&self.layout).options.cross_axis_gap
             && self.options.main_axis_gap == RefCell::borrow(&self.layout).options.main_axis_gap
-            && self.content.iter().any(|item| RefCell::borrow(&item).view.needs_relayout())
+            && self
+                .content
+                .iter()
+                .any(|item| RefCell::borrow(item).view.needs_relayout())
     }
 
     /// Given `constraint`, return the minimal required size the printer for this view should be.
     /// `constraint` is the maximum possible size for the printer.
     fn required_size(&mut self, constraint: cursive_core::Vec2) -> cursive_core::Vec2 {
         constraint
+    }
+
+    // TODO: Find correct child for mouse events.
+    fn on_event(&mut self, event: cursive_core::event::Event) -> cursive_core::event::EventResult {
+        if let Some(active_child) = self.active {
+            RefCell::borrow_mut(&self.content[active_child])
+                .view
+                .on_event(event)
+        } else {
+            EventResult::Ignored
+        }
     }
 }

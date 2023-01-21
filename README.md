@@ -1,15 +1,13 @@
 # Cursive Flexbox
-> Sometimes you spend so much time debating whether you could, that you don't
-> stop to think whether you should...
-
 This aims to be a complete flexbox implementation for Cursive, a Rust TUI
 library. It should be complete in the sense that it supports most things that
 the CSS3 flexbox supports.
 
 > Development of this library just started so of course, it isn't complete yet.
-> Progress will be tracked below.
+> Progress will be tracked below. API design is absolutely not final, and won't
+> be before all major functionality is implemented.
 
-# Currently Implemented
+## Currently Implemented
 - [ ] direction
     - [x] row
     - [ ] row-reverse
@@ -22,27 +20,28 @@ the CSS3 flexbox supports.
     - [x] space-between
     - [x] space-around
     - [x] space-evenly
-- [ ] align-items
+- [x] align-items
     - [x] start
-    - [ ] end
-    - [ ] center
-    - [ ] stretch
-- [ ] align-content
+    - [x] end
+    - [x] center
+    - [x] stretch
+- [x] align-content
     - [x] start
-    - [ ] end
-    - [ ] center
-    - [ ] stretch
-    - [ ] space-between
-    - [ ] space-around
+    - [x] end
+    - [x] center
+    - [x] stretch
+    - [x] space-between
+    - [x] space-around
 - [ ] gap
     - [x] main-axis-gap
     - [ ] cross-axis-gap
+- [ ] flex-grow
 
-# API and Guidelines
+## API and Guidelines
 Once more things have been implemented and I have a general overview of the
 status and implementation of the project, I'll start to work towards adhering to
 [the general Rust guidelines](https://rust-lang.github.io/api-guidelines/).
 
-# Contributions
+## Contributions
 Contributions are very much welcome. Keep in mind that the project just started
 so there isn't much implemented yet.

@@ -3,11 +3,10 @@ name = "cursive-flexbox"
 version = "0.1.0"
 edition = "2021"
 authors = ["Thomas Frans <franske2000 [at] gmail [dot] com>"]
-description = "Flexbox implementation for cursive"
+description = "Correct flexbox implementation for cursive"
 license = "MIT"
 repository = "https://github.com/ThomasFrans/cursive-flexbox"
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
-
 [dependencies]
+# Core cursive functionality needed to implement new cursive libraries.
 cursive_core = "0.3.7"
