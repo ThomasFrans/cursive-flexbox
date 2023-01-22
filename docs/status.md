@@ -33,5 +33,9 @@
 - [x] gap
     - [x] main-axis-gap
     - [x] cross-axis-gap
+- [ ] flex-wrap
+    - [x] no-wrap
+    - [x] wrap
+    - [ ] wrap-reverse
 - [x] flex-grow
 

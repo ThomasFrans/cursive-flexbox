@@ -1,6 +1,7 @@
 # Cursive Flexbox ![Maintenance](https://img.shields.io/maintenance/yes/2023?style=flat-square)
 > This library is not stable yet. It is under development and the API will change before the first
-> release. When ready for the first release, the crate will be published to crates.io.
+> release. Starting from major version 1 (1.x.x), this library can be considered stable and
+> generally usable.
 
 A correct, complete flexbox implementation for the [Cursive TUI
 library](https://github.com/gyscos/cursive). The implementation follows the CSS3 specification where
@@ -12,10 +13,10 @@ Documentation will be available after the first upload to crates.io. For now, it
 running `cargo doc --open`, which will open in the default web browser.
 
 ## API and Guidelines
-Once more things have been implemented and I have a general overview of the
-status and implementation of the project, I'll start to work towards adhering to
-[the general Rust guidelines](https://rust-lang.github.io/api-guidelines/).
+Once more things have been implemented and I have a general overview of the status and
+implementation of the project, I'll start to work towards adhering to [the general Rust
+guidelines](https://rust-lang.github.io/api-guidelines/).
 
 ## Contributions
-Contributions are very much welcome. Keep in mind that the project just started
-so there isn't much implemented yet.
+Contributions are very much welcome. Keep in mind that the project just started so there isn't much
+implemented yet.

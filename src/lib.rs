@@ -4,41 +4,8 @@
 //! library tries to adhere to the CSS3 specification of the flexbox as much as possible. Users who
 //! are already familiar with it should feel right at home working with this implementation.
 //!
-//! ### Example 1
-//! ```
-//! let mut flexbox = FlexBox::from([
-//!     Panel::new(Layer::with_color(
-//!         TextView::new(
-//!             "This is one quick line.\nHi another time :)\nAnd yet another time...",
-//!         ),
-//!         ColorStyle::back(cursive::theme::BaseColor::Green.dark()),
-//!     )),
-//!     Panel::new(Layer::with_color(
-//!         TextView::new("And another line just for fun."),
-//!         ColorStyle::back(cursive::theme::BaseColor::Green.dark()),
-//!     )),
-//!     Panel::new(Layer::with_color(
-//!         TextView::new("Yes I think yet another is fine.\nJust for fun!"),
-//!         ColorStyle::back(cursive::theme::BaseColor::Green.dark()),
-//!     )),
-//!     Panel::new(Layer::with_color(
-//!         TextView::new("We're just testing things here...\n1\n2\n3"),
-//!         ColorStyle::back(cursive::theme::BaseColor::Green.dark()),
-//!     )),
-//!     Panel::new(Layer::with_color(
-//!         TextView::new("That should be enough."),
-//!         ColorStyle::back(cursive::theme::BaseColor::Green.dark()),
-//!     )),
-//! ]);
-//! flexbox.set_main_axis_gap(0);
-//! flexbox.set_wrap(FlexWrap::Wrap);
-//! flexbox.set_justify_content(JustifyContent::SpaceEvenly);
-//! flexbox.set_align_items(AlignItems::Center);
-//! flexbox.set_align_content(AlignContent::SpaceAround);
-//! flexbox.set_direction(FlexDirection::Row);
-
-//! ui.ui.add_fullscreen_layer(flexbox);
-//! ```
+//! ### Examples
+//! - [Cargo examples](https://github.com/ThomasFrans/cursive-flexbox/tree/main/examples)
 
 #![warn(missing_docs, future_incompatible, rust_2018_idioms, let_underscore)]
 
@@ -690,11 +657,8 @@ impl MainAxis {
     }
 }
 
-impl<T: IntoIterator> From<T> for FlexBox
-where
-    <T as IntoIterator>::Item: IntoBoxedView,
-{
-    fn from(value: T) -> Self {
+impl From<Vec<Box<dyn View>>> for FlexBox {
+    fn from(value: Vec<Box<dyn View>>) -> Self {
         let content: Vec<Rc<RefCell<FlexItem>>> = value
             .into_iter()
             .map(|item| {
@@ -737,7 +701,10 @@ impl FlexBox {
     }
 
     /// Set the grow factor of an item.
-    pub fn set_grow(&mut self, index: usize, flex_grow: u8) {
+    ///
+    /// # Panics
+    /// Panics if the index is too big.
+    pub fn set_flex_grow(&mut self, index: usize, flex_grow: u8) {
         Rc::as_ref(&self.content[index]).borrow_mut().flex_grow = flex_grow;
     }
 
@@ -821,5 +788,271 @@ impl View for FlexBox {
         } else {
             EventResult::Ignored
         }
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use cursive::views::TextView;
+
+    use super::*;
+
+    #[test]
+    fn justify_content_single_item() {
+        let mut flexbox = FlexBox::from(vec![TextView::new("Hello").into_boxed_view()]);
+
+        // JustifyContent::FlexStart
+        flexbox.set_justify_content(JustifyContent::FlexStart);
+        let layout = Layout::generate(
+            &flexbox
+                .content
+                .iter()
+                .map(|item| Rc::downgrade(&Rc::clone(item)))
+                .collect::<Vec<_>>(),
+            9,
+            1,
+            Some(0),
+            flexbox.options,
+        );
+        let mut layout_mut = RefCell::borrow_mut(&layout);
+        let windows = layout_mut.windows();
+        assert_eq!(windows[0].1.left(), 0);
+        assert_eq!(windows[0].1.width(), 5);
+
+        // JustifyContent::FlexEnd
+        flexbox.set_justify_content(JustifyContent::FlexEnd);
+        let layout = Layout::generate(
+            &flexbox
+                .content
+                .iter()
+                .map(|item| Rc::downgrade(&Rc::clone(item)))
+                .collect::<Vec<_>>(),
+            9,
+            1,
+            Some(0),
+            flexbox.options,
+        );
+        let mut layout_mut = RefCell::borrow_mut(&layout);
+        let windows = layout_mut.windows();
+        assert_eq!(windows[0].1.left(), 4);
+        assert_eq!(windows[0].1.width(), 5);
+
+        // JustifyContent::Center
+        flexbox.set_justify_content(JustifyContent::Center);
+        let layout = Layout::generate(
+            &flexbox
+                .content
+                .iter()
+                .map(|item| Rc::downgrade(&Rc::clone(item)))
+                .collect::<Vec<_>>(),
+            9,
+            1,
+            Some(0),
+            flexbox.options,
+        );
+        let mut layout_mut = RefCell::borrow_mut(&layout);
+        let windows = layout_mut.windows();
+        assert_eq!(windows[0].1.left(), 2);
+        assert_eq!(windows[0].1.width(), 5);
+
+        // JustifyContent::SpaceEvenly
+        flexbox.set_justify_content(JustifyContent::SpaceBetween);
+        let layout = Layout::generate(
+            &flexbox
+                .content
+                .iter()
+                .map(|item| Rc::downgrade(&Rc::clone(item)))
+                .collect::<Vec<_>>(),
+            9,
+            1,
+            Some(0),
+            flexbox.options,
+        );
+        let mut layout_mut = RefCell::borrow_mut(&layout);
+        let windows = layout_mut.windows();
+        assert_eq!(windows[0].1.left(), 0);
+        assert_eq!(windows[0].1.width(), 5);
+
+        // JustifyContent::SpaceAround
+        flexbox.set_justify_content(JustifyContent::SpaceAround);
+        let layout = Layout::generate(
+            &flexbox
+                .content
+                .iter()
+                .map(|item| Rc::downgrade(&Rc::clone(item)))
+                .collect::<Vec<_>>(),
+            9,
+            1,
+            Some(0),
+            flexbox.options,
+        );
+        let mut layout_mut = RefCell::borrow_mut(&layout);
+        let windows = layout_mut.windows();
+        assert_eq!(windows[0].1.left(), 2);
+        assert_eq!(windows[0].1.width(), 5);
+
+        // JustifyContent::SpaceEvenly
+        flexbox.set_justify_content(JustifyContent::SpaceEvenly);
+        let layout = Layout::generate(
+            &flexbox
+                .content
+                .iter()
+                .map(|item| Rc::downgrade(&Rc::clone(item)))
+                .collect::<Vec<_>>(),
+            9,
+            1,
+            Some(0),
+            flexbox.options,
+        );
+        let mut layout_mut = RefCell::borrow_mut(&layout);
+        let windows = layout_mut.windows();
+        assert_eq!(windows[0].1.left(), 2);
+        assert_eq!(windows[0].1.width(), 5);
+    }
+
+    #[test]
+    fn justify_content_multiple_items() {
+        let mut flexbox = FlexBox::from(vec![
+            TextView::new("Hello").into_boxed_view(),
+            TextView::new("flexbox").into_boxed_view(),
+        ]);
+
+        flexbox.set_justify_content(JustifyContent::FlexStart);
+
+        let layout = Layout::generate(
+            &flexbox
+                .content
+                .iter()
+                .map(|item| Rc::downgrade(&Rc::clone(item)))
+                .collect::<Vec<_>>(),
+            18,
+            1,
+            Some(0),
+            flexbox.options,
+        );
+
+        let mut layout_mut = RefCell::borrow_mut(&layout);
+        let windows = layout_mut.windows();
+
+        assert_eq!(windows[0].1.left(), 0);
+        assert_eq!(windows[0].1.width(), 5);
+
+        assert_eq!(windows[1].1.left(), 5);
+        assert_eq!(windows[1].1.width(), 7);
+
+        flexbox.set_justify_content(JustifyContent::FlexEnd);
+
+        let layout = Layout::generate(
+            &flexbox
+                .content
+                .iter()
+                .map(|item| Rc::downgrade(&Rc::clone(item)))
+                .collect::<Vec<_>>(),
+            18,
+            1,
+            Some(0),
+            flexbox.options,
+        );
+
+        let mut layout_mut = RefCell::borrow_mut(&layout);
+        let windows = layout_mut.windows();
+
+        assert_eq!(windows[0].1.left(), 6);
+        assert_eq!(windows[0].1.width(), 5);
+
+        assert_eq!(windows[1].1.left(), 11);
+        assert_eq!(windows[1].1.width(), 7);
+
+        flexbox.set_justify_content(JustifyContent::Center);
+
+        let layout = Layout::generate(
+            &flexbox
+                .content
+                .iter()
+                .map(|item| Rc::downgrade(&Rc::clone(item)))
+                .collect::<Vec<_>>(),
+            18,
+            1,
+            Some(0),
+            flexbox.options,
+        );
+
+        let mut layout_mut = RefCell::borrow_mut(&layout);
+        let windows = layout_mut.windows();
+
+        assert_eq!(windows[0].1.left(), 3);
+        assert_eq!(windows[0].1.width(), 5);
+
+        assert_eq!(windows[1].1.left(), 8);
+        assert_eq!(windows[1].1.width(), 7);
+
+        flexbox.set_justify_content(JustifyContent::SpaceBetween);
+
+        let layout = Layout::generate(
+            &flexbox
+                .content
+                .iter()
+                .map(|item| Rc::downgrade(&Rc::clone(item)))
+                .collect::<Vec<_>>(),
+            18,
+            1,
+            Some(0),
+            flexbox.options,
+        );
+
+        let mut layout_mut = RefCell::borrow_mut(&layout);
+        let windows = layout_mut.windows();
+
+        assert_eq!(windows[0].1.left(), 0);
+        assert_eq!(windows[0].1.width(), 5);
+
+        assert_eq!(windows[1].1.left(), 11);
+        assert_eq!(windows[1].1.width(), 7);
+
+        flexbox.set_justify_content(JustifyContent::SpaceAround);
+
+        let layout = Layout::generate(
+            &flexbox
+                .content
+                .iter()
+                .map(|item| Rc::downgrade(&Rc::clone(item)))
+                .collect::<Vec<_>>(),
+            16,
+            1,
+            Some(0),
+            flexbox.options,
+        );
+
+        let mut layout_mut = RefCell::borrow_mut(&layout);
+        let windows = layout_mut.windows();
+
+        assert_eq!(windows[0].1.left(), 1);
+        assert_eq!(windows[0].1.width(), 5);
+
+        assert_eq!(windows[1].1.left(), 8);
+        assert_eq!(windows[1].1.width(), 7);
+
+        flexbox.set_justify_content(JustifyContent::SpaceEvenly);
+
+        let layout = Layout::generate(
+            &flexbox
+                .content
+                .iter()
+                .map(|item| Rc::downgrade(&Rc::clone(item)))
+                .collect::<Vec<_>>(),
+            18,
+            1,
+            Some(0),
+            flexbox.options,
+        );
+
+        let mut layout_mut = RefCell::borrow_mut(&layout);
+        let windows = layout_mut.windows();
+
+        assert_eq!(windows[0].1.left(), 2);
+        assert_eq!(windows[0].1.width(), 5);
+
+        assert_eq!(windows[1].1.left(), 9);
+        assert_eq!(windows[1].1.width(), 7);
     }
 }
