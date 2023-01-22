@@ -254,7 +254,7 @@ impl Layout {
                 },
                 _ => {},
             }
-            cross_offset += axis.cross_axis_size(self);
+            cross_offset += axis.cross_axis_size(self) + self.options.cross_axis_gap as usize;
         }
 
         windows
@@ -267,6 +267,8 @@ impl Layout {
         for axis in &self.main_axes {
             used_space += axis.cross_axis_size(self);
         }
+
+        used_space += (self.main_axis_count() - 1) * self.options.cross_axis_gap as usize;
 
         match self.options.direction {
             FlexDirection::Row | FlexDirection::RowReverse => {
@@ -323,6 +325,7 @@ impl Layout {
         layout
     }
 
+    /// Return the size of a [FlexItem] along the main axis.
     pub fn flexitem_main_axis_size(&self, item: &mut FlexItem) -> usize {
         match self.options.direction {
             FlexDirection::Row | FlexDirection::RowReverse => item.view.required_size(self.size).x,
@@ -330,6 +333,11 @@ impl Layout {
                 item.view.required_size(self.size).y
             },
         }
+    }
+
+    /// Return the amount of main axes in this layout.
+    pub fn main_axis_count(&self) -> usize {
+        self.main_axes.len()
     }
 }
 

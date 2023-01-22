@@ -1,8 +1,15 @@
-## Implementation Status
+## Implemented
+- Layout (except reverse directions).
+- Cursive View draw and layout stages.
+
+## Not Yet Implemented
+- Cursive View trait behavior.
+
+## Layout Implementation
 - [ ] direction
     - [x] row
-    - [ ] row-reverse
     - [x] column
+    - [ ] row-reverse
     - [ ] column-reverse
 - [x] justify-content
     - [x] start
@@ -23,8 +30,8 @@
     - [x] stretch
     - [x] space-between
     - [x] space-around
-- [ ] gap
+- [x] gap
     - [x] main-axis-gap
-    - [ ] cross-axis-gap
+    - [x] cross-axis-gap
 - [x] flex-grow
 
