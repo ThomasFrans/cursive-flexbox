@@ -1,12 +1,7 @@
 # Towards First Release
 - Check and follow the [Rust API Guidelines](https://rust-lang.github.io/api-guidelines/).
-- Consider using the [stretch](https://github.com/vislyhq/stretch) crate for layout.
+- Consider using the [stretch](https://github.com/vislyhq/stretch) crate for layout?
 - Implement the unimplemented stuff.
-- Set up CI.
-- Set up style guide.
-- Set up .rustfmt.toml?
-- Set up editorconfig?
-- Enable sensible warnings for the rust compiler (like the missing_docs one).
 - Create issue template?
 - Test, test, test...
 - Check all the documentation twice.

@@ -44,6 +44,10 @@ fn main() {
     // Set a 1 cell gap between the items on the main axis.
     flexbox.set_main_axis_gap(0);
 
+    // Set item grow factors.
+    flexbox.set_grow(1, 1);
+    flexbox.set_grow(2, 2);
+
     // Wrap main axes when there is no more space.
     flexbox.set_wrap(FlexWrap::Wrap);
 

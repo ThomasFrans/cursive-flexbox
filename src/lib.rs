@@ -40,7 +40,7 @@
 //! ui.ui.add_fullscreen_layer(flexbox);
 //! ```
 
-#![warn(missing_docs)]
+#![warn(missing_docs, future_incompatible, rust_2018_idioms, let_underscore)]
 
 use std::{
     cell::RefCell,
@@ -126,7 +126,7 @@ pub enum AlignContent {
     /// Align content to the end of the container.
     FlexEnd,
     /// Align content to the center of the container.
-    FlexCenter,
+    Center,
     /// Stretch content along the secondary axis.
     Stretch,
     /// Align main axis with an equal amount of space between them.
@@ -198,7 +198,7 @@ impl Layout {
                     }
                     assignable_free_space = 0;
                 },
-                AlignContent::FlexCenter => {
+                AlignContent::Center => {
                     if assignable_free_space > 0 {
                         cross_offset += assignable_free_space / 2;
                     }
@@ -414,8 +414,26 @@ impl MainAxis {
                 // Axis contains elements that want the free space. Give it to them, don't use
                 // justify-content.
 
-                // Decides `start_x` and `width`. Item's view `layout()` called with this
-                // calculated width later.
+                // BUG: This doesn't guarantee to assign all free space! Implement a better
+                // algorithm!
+                let added_space = ((RefCell::borrow(&item).flex_grow as f64
+                    / combined_grow_factor as f64)
+                    * assignable_free_space as f64) as usize;
+                let item_main_axis_size =
+                    layout.flexitem_main_axis_size(&mut RefCell::borrow_mut(&item));
+
+                // Decides `start_x` and `width`.
+                match layout.options.direction {
+                    FlexDirection::Row | FlexDirection::RowReverse => {
+                        start_x = offset;
+                        width = item_main_axis_size + added_space;
+                    },
+                    FlexDirection::Column | FlexDirection::ColumnReverse => {
+                        start_y = offset;
+                        height = item_main_axis_size + added_space;
+                    },
+                }
+                offset += item_main_axis_size + layout.options.main_axis_gap as usize + added_space;
             } else {
                 // Axis doesn't contain elements that want free space. Use justify-content property
                 // to decide positioning.
@@ -658,7 +676,7 @@ impl MainAxis {
     pub fn combined_grow_factor(&self) -> usize {
         let mut total_grow_factor = 0usize;
         self.items.iter().for_each(|item| {
-            total_grow_factor += RefCell::borrow(&item.upgrade().unwrap()).flex_grow as usize
+            total_grow_factor += RefCell::borrow(&item.upgrade().unwrap()).flex_grow as usize;
         });
         total_grow_factor
     }
@@ -743,7 +761,7 @@ impl FlexBox {
 
 impl View for FlexBox {
     /// Draw this view using the printer.
-    fn draw(&self, printer: &cursive_core::Printer) {
+    fn draw(&self, printer: &cursive_core::Printer<'_, '_>) {
         // TODO: Move all the calculations from draw to layout phase. Now `windows()` has to
         // calculate the windows, which should be cached from the layout phase.
         for (child, window) in RefCell::borrow_mut(&self.layout).windows() {
