@@ -61,7 +61,7 @@ fn main() {
     flexbox.set_flex_grow(2, 2);
 
     // Set the wrapping behavior of the main axes.
-    flexbox.set_wrap(FlexWrap::Wrap);
+    flexbox.set_flex_wrap(FlexWrap::Wrap);
 
     // Set the algorithm to assign free space along the main axis.
     flexbox.set_justify_content(JustifyContent::SpaceEvenly);
@@ -73,7 +73,7 @@ fn main() {
     flexbox.set_align_content(AlignContent::FlexStart);
 
     // Set the direction of the main axis.
-    flexbox.set_direction(FlexDirection::Row);
+    flexbox.set_flex_direction(FlexDirection::Row);
 
     // Add the flexbox to the ui.
     cursive.add_fullscreen_layer(flexbox);

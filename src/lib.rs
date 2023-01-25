@@ -7,7 +7,13 @@
 //! ### Examples
 //! - [Cargo examples](https://github.com/ThomasFrans/cursive-flexbox/tree/main/examples)
 
-#![warn(missing_docs, future_incompatible, rust_2018_idioms, let_underscore)]
+#![warn(
+    missing_docs,
+    future_incompatible,
+    rust_2018_idioms,
+    let_underscore,
+    clippy::missing_docs_in_private_items
+)]
 
 use std::{
     cell::RefCell,
@@ -21,70 +27,73 @@ use cursive_core::{event::EventResult, view::IntoBoxedView, Rect, Vec2, View, XY
 /// Direction of a flex container's main axis.
 #[derive(Debug, Default, Clone, Copy, PartialEq, Eq)]
 pub enum FlexDirection {
-    /// Lay out the items in a row.
+    /// Flex items are layed out in a row.
     #[default]
     Row,
-    /// Lay out the items in a row (reverse order).
+    /// Flex items are layed out in a row, in reverse order.
     RowReverse,
-    /// Lay out the items in a column.
+    /// Flex items are layed out in a column.
     Column,
-    /// Lay out the items in a column (reverse order).
+    /// Flex items are layed out in a column, in reverse order.
     ColumnReverse,
 }
 
 // https://developer.mozilla.org/en-US/docs/Web/CSS/flex-wrap
 // https://w3c.github.io/csswg-drafts/css-flexbox/#flex-wrap-property
-/// Wrapping behavior and direction of the cross axis of a flexbox.
+/// Wrapping behavior and direction of a flexbox container's main axis.
 #[derive(Debug, Default, Clone, Copy, PartialEq, Eq)]
 pub enum FlexWrap {
-    /// Don't wrap items.
+    /// Don't wrap the main axis.
     #[default]
     NoWrap,
-    /// Wrap items along the secondary axis.
+    /// Wrap the main axis.
     Wrap,
-    /// Wrap items against the secondary axis.
+    /// Wrap the main axis in the opposite direction.
     WrapReverse,
 }
 
 // https://developer.mozilla.org/en-US/docs/Web/CSS/justify-content
 // https://w3c.github.io/csswg-drafts/css-flexbox/#propdef-justify-content
 /// Alignment of items in a flexbox along the main axis.
+#[non_exhaustive] // Specification lists more options. Might be added later.
 #[derive(Debug, Default, Clone, Copy, PartialEq, Eq)]
 pub enum JustifyContent {
-    /// Justify items at the start of the container.
-    #[default]
+    /// Flex items are packed against the start of the container.
+    #[default] // Following w3c specification as there is no 'normal' option.
     FlexStart,
-    /// Justify items at the end of the container.
+    /// Flex items are packed against the end of the container.
     FlexEnd,
-    /// Justify items at the center of the container.
+    /// Flex items are packed in the center, with equal space to either side.
     Center,
-    /// Justify items with an equal amount of space between them.
+    /// Flex items are packed with equal space between them.
     SpaceBetween,
-    /// Justify items with an equal amount of margin per item.
+    /// Flex items are packed with equal space around each item.
     SpaceAround,
-    /// Justify items with an equal amount of space between them (including sides).
-    SpaceEvenly,
+    /// Flex items are packed with equal space between all items (including the sides).
+    SpaceEvenly, // Included although not in w3c specification.
 }
 
 // https://developer.mozilla.org/en-US/docs/Web/CSS/align-items
 // https://w3c.github.io/csswg-drafts/css-flexbox/#align-items-property
+// Baseline isn't included as Cursive doesn't support it, and it makes little sense in a TUI.
 /// Alignment of items in a flexbox along the cross axis.
 #[derive(Debug, Default, Clone, Copy, PartialEq, Eq)]
 pub enum AlignItems {
-    /// Align items at the start of the secondary axis.
+    /// Align flex items at the start of the cross axis.
     FlexStart,
-    /// Align items at the end of the secondery axis.
+    /// Align flex items at the end of the cross axis.
     FlexEnd,
-    /// Align items at the center of the secondary axis.
+    /// Align flex items at the center of the cross axis.
     Center,
-    /// Stretch items to fill all the space along the secondary axis.
-    #[default]
+    /// Stretch flex items to fill all the space along the cross axis.
+    #[default] // Following w3c specification as there is no 'normal' option.
     Stretch,
 }
 
 // https://developer.mozilla.org/en-US/docs/Web/CSS/align-content
 // https://w3c.github.io/csswg-drafts/css-flexbox/#align-content-property
 /// Alignment of the main axes in a flexbox.
+#[non_exhaustive] // Might add space-evenly, even though not in w3c specification.
 #[derive(Debug, Default, Clone, Copy, PartialEq, Eq)]
 pub enum AlignContent {
     /// Align content to the start of the container.
@@ -94,7 +103,7 @@ pub enum AlignContent {
     FlexEnd,
     /// Align content to the center of the container.
     Center,
-    /// Stretch content along the secondary axis.
+    /// Stretch content along the cross axis.
     Stretch,
     /// Align main axis with an equal amount of space between them.
     SpaceBetween,
@@ -102,11 +111,13 @@ pub enum AlignContent {
     SpaceAround,
 }
 
+/// A single flex item in a flexbox layout.
 struct FlexItem {
+    // https://developer.mozilla.org/en-US/docs/Web/CSS/flex-grow
     /// The proportion of extra space in the container along the main axis that should be given to
     /// this item.
-    /// https://css-tricks.com/snippets/css/a-guide-to-flexbox/#aa-flex-grow
     flex_grow: u8,
+    /// The Cursive view represented by this flex item in the flexbox layout.
     view: Box<dyn View>,
 }
 
@@ -116,7 +127,7 @@ struct FlexBoxOptions {
     /// The direction of the main axis.
     direction: FlexDirection,
     /// Algorithm that assigns extra space on the main axis. This does nothing if any of the items
-    /// on a main axis request to grow.
+    /// on a main axis request extra space with flex-grow.
     justification: JustifyContent,
     /// How to place items on the cross axis.
     item_alignment: AlignItems,
@@ -131,14 +142,16 @@ struct FlexBoxOptions {
 }
 
 /// An actual layout of a flexbox with real dimensions.
-/// https://developer.mozilla.org/en-US/docs/Learn/CSS/CSS_layout/Flexbox#the_flex_model
+/// <https://developer.mozilla.org/en-US/docs/Learn/CSS/CSS_layout/Flexbox#the_flex_model>
 #[derive(Default)]
 struct Layout {
     /// The dimensions of the container.
     size: XY<usize>,
     /// The currently active item.
     active: Option<usize>,
+    /// Options for this particular layout of the flexbox.
     options: FlexBoxOptions,
+    /// Parts that together form the entire main axis of this flexbox.
     main_axes: Vec<MainAxis>,
 }
 
@@ -314,11 +327,12 @@ impl Layout {
 struct MainAxis {
     /// The items in this main axis.
     items: Vec<Weak<RefCell<FlexItem>>>,
-    // Cache value for the remaining free space in this axis.
+    /// Cache value for the remaining free space in this axis.
     free_space: usize,
 }
 
 impl MainAxis {
+    /// Create a new main axis part for the given layout.
     pub fn new(layout: Weak<RefCell<Layout>>) -> Self {
         let layout_upgraded = layout.upgrade().unwrap();
         let free_space = match RefCell::borrow(&layout_upgraded).options.direction {
@@ -690,9 +704,19 @@ pub struct FlexBox {
 }
 
 impl FlexBox {
+    /// Get the main axis gap.
+    pub fn main_axis_gap(&self) -> u16 {
+        self.options.main_axis_gap
+    }
+
     /// Set the fixed gap between elements on the main axis.
     pub fn set_main_axis_gap(&mut self, gap: u16) {
         self.options.main_axis_gap = gap;
+    }
+
+    /// Get the cross axis gap.
+    pub fn cross_axis_gap(&self) -> u16 {
+        self.options.cross_axis_gap
     }
 
     /// Set the fixed gap between the main axes.
@@ -708,9 +732,19 @@ impl FlexBox {
         Rc::as_ref(&self.content[index]).borrow_mut().flex_grow = flex_grow;
     }
 
+    /// Get the justify-content option.
+    pub fn justify_content(&self) -> JustifyContent {
+        self.options.justification
+    }
+
     /// Set the justify-content option.
     pub fn set_justify_content(&mut self, justify_content: JustifyContent) {
         self.options.justification = justify_content;
+    }
+
+    /// Get the align-items option.
+    pub fn align_items(&self) -> AlignItems {
+        self.options.item_alignment
     }
 
     /// Set the align-items option.
@@ -718,18 +752,33 @@ impl FlexBox {
         self.options.item_alignment = item_alignment;
     }
 
+    /// Get the align-content option.
+    pub fn align_content(&self) -> AlignContent {
+        self.options.axes_alignment
+    }
+
     /// Set the align-content option.
     pub fn set_align_content(&mut self, axes_alignment: AlignContent) {
         self.options.axes_alignment = axes_alignment;
     }
 
+    /// Get the flex-direction option.
+    pub fn flex_direction(&self) -> FlexDirection {
+        self.options.direction
+    }
+
     /// Set the direction of the main axis.
-    pub fn set_direction(&mut self, direction: FlexDirection) {
+    pub fn set_flex_direction(&mut self, direction: FlexDirection) {
         self.options.direction = direction;
     }
 
+    /// Get the flex-wrap option.
+    pub fn flex_wrap(&self) -> FlexWrap {
+        self.options.wrap
+    }
+
     /// Set the wrapping behavior.
-    pub fn set_wrap(&mut self, wrap: FlexWrap) {
+    pub fn set_flex_wrap(&mut self, wrap: FlexWrap) {
         self.options.wrap = wrap;
     }
 }
