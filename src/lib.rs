@@ -299,7 +299,15 @@ impl Layout {
                 }
             }
 
-            RefCell::borrow_mut(&layout).main_axes.push(main_axis);
+            // PERF: Inserting elements at the front isn't ideal for performance.
+            match options.wrap {
+                FlexWrap::NoWrap | FlexWrap::Wrap => {
+                    RefCell::borrow_mut(&layout).main_axes.push(main_axis)
+                },
+                FlexWrap::WrapReverse => {
+                    RefCell::borrow_mut(&layout).main_axes.insert(0, main_axis)
+                },
+            }
         }
 
         layout
