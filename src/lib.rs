@@ -17,6 +17,7 @@
 
 use std::{
     cell::RefCell,
+    fmt::Display,
     rc::{Rc, Weak},
 };
 
@@ -25,7 +26,7 @@ use cursive_core::{event::EventResult, view::IntoBoxedView, Rect, Vec2, View, XY
 // https://developer.mozilla.org/en-US/docs/Web/CSS/flex-direction
 // https://w3c.github.io/csswg-drafts/css-flexbox/#flex-direction-property
 /// Direction of a flex container's main axis.
-#[derive(Debug, Default, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Default, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum FlexDirection {
     /// Flex items are layed out in a row.
     #[default]
@@ -38,10 +39,25 @@ pub enum FlexDirection {
     ColumnReverse,
 }
 
+impl Display for FlexDirection {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "{}",
+            match self {
+                Self::Row => "row",
+                Self::RowReverse => "row-reverse",
+                Self::Column => "column",
+                Self::ColumnReverse => "column-reverse",
+            }
+        )
+    }
+}
+
 // https://developer.mozilla.org/en-US/docs/Web/CSS/flex-wrap
 // https://w3c.github.io/csswg-drafts/css-flexbox/#flex-wrap-property
 /// Wrapping behavior and direction of a flexbox container's main axis.
-#[derive(Debug, Default, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Default, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum FlexWrap {
     /// Don't wrap the main axis.
     #[default]
@@ -52,11 +68,25 @@ pub enum FlexWrap {
     WrapReverse,
 }
 
+impl Display for FlexWrap {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "{}",
+            match self {
+                Self::NoWrap => "nowrap",
+                Self::Wrap => "wrap",
+                Self::WrapReverse => "wrap-reverse",
+            }
+        )
+    }
+}
+
 // https://developer.mozilla.org/en-US/docs/Web/CSS/justify-content
 // https://w3c.github.io/csswg-drafts/css-flexbox/#propdef-justify-content
 /// Alignment of items in a flexbox along the main axis.
 #[non_exhaustive] // Specification lists more options. Might be added later.
-#[derive(Debug, Default, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Default, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum JustifyContent {
     /// Flex items are packed against the start of the container.
     #[default] // Following w3c specification as there is no 'normal' option.
@@ -73,11 +103,28 @@ pub enum JustifyContent {
     SpaceEvenly, // Included although not in w3c specification.
 }
 
+impl Display for JustifyContent {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "{}",
+            match self {
+                Self::FlexStart => "flex-start",
+                Self::FlexEnd => "flex-end",
+                Self::Center => "center",
+                Self::SpaceBetween => "space-between",
+                Self::SpaceAround => "space-around",
+                Self::SpaceEvenly => "space-evenly",
+            }
+        )
+    }
+}
+
 // https://developer.mozilla.org/en-US/docs/Web/CSS/align-items
 // https://w3c.github.io/csswg-drafts/css-flexbox/#align-items-property
 // Baseline isn't included as Cursive doesn't support it, and it makes little sense in a TUI.
 /// Alignment of items in a flexbox along the cross axis.
-#[derive(Debug, Default, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Default, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum AlignItems {
     /// Align flex items at the start of the cross axis.
     FlexStart,
@@ -90,11 +137,26 @@ pub enum AlignItems {
     Stretch,
 }
 
+impl Display for AlignItems {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "{}",
+            match self {
+                Self::FlexStart => "flex-start",
+                Self::FlexEnd => "flex-end",
+                Self::Center => "center",
+                Self::Stretch => "stretch",
+            }
+        )
+    }
+}
+
 // https://developer.mozilla.org/en-US/docs/Web/CSS/align-content
 // https://w3c.github.io/csswg-drafts/css-flexbox/#align-content-property
 /// Alignment of the main axes in a flexbox.
 #[non_exhaustive] // Might add space-evenly, even though not in w3c specification.
-#[derive(Debug, Default, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Default, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum AlignContent {
     /// Align content to the start of the container.
     #[default]
@@ -109,6 +171,23 @@ pub enum AlignContent {
     SpaceBetween,
     /// Align main axis with an equal of margin per axis.
     SpaceAround,
+}
+
+impl Display for AlignContent {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "{}",
+            match self {
+                Self::FlexStart => "flex-start",
+                Self::FlexEnd => "flex-end",
+                Self::Center => "center",
+                Self::Stretch => "stretch",
+                Self::SpaceBetween => "space-between",
+                Self::SpaceAround => "space-around",
+            }
+        )
+    }
 }
 
 /// A single flex item in a flexbox layout.
@@ -157,7 +236,7 @@ struct Layout {
 
 /// Any error that can arise from operations on a flexbox.
 #[derive(Debug)]
-pub enum FlexBoxError {
+pub enum FlexboxError {
     /// Error when trying to add too many items to one axis.
     AxisFull,
 }
@@ -622,7 +701,7 @@ impl MainAxis {
         &mut self,
         item: Weak<RefCell<FlexItem>>,
         layout: &mut Layout,
-    ) -> Result<(), FlexBoxError> {
+    ) -> Result<(), FlexboxError> {
         let upgraded_item = item.upgrade().unwrap();
         if self.can_accomodate(&mut RefCell::borrow_mut(&upgraded_item), layout) {
             self.free_space = self.free_space.saturating_sub(
@@ -640,7 +719,7 @@ impl MainAxis {
 
             Ok(())
         } else {
-            Err(FlexBoxError::AxisFull)
+            Err(FlexboxError::AxisFull)
         }
     }
 
@@ -679,7 +758,7 @@ impl MainAxis {
     }
 }
 
-impl From<Vec<Box<dyn View>>> for FlexBox {
+impl From<Vec<Box<dyn View>>> for Flexbox {
     fn from(value: Vec<Box<dyn View>>) -> Self {
         let content: Vec<Rc<RefCell<FlexItem>>> = value
             .into_iter()
@@ -699,7 +778,7 @@ impl From<Vec<Box<dyn View>>> for FlexBox {
 
 /// A container that can be used to display a list of items in a flexible way.
 #[derive(Default)]
-pub struct FlexBox {
+pub struct Flexbox {
     /// The content of the flexbox. Unlike some flexboxes, order is always dictated by the order of
     /// the items in `content`. There is no way to overwrite this.
     content: Vec<Rc<RefCell<FlexItem>>>,
@@ -711,7 +790,13 @@ pub struct FlexBox {
     layout: Rc<RefCell<Layout>>,
 }
 
-impl FlexBox {
+impl Flexbox {
+    #[inline(always)]
+    /// Create a new Flexbox with default settings.
+    pub fn new() -> Self {
+        Self::default()
+    }
+
     /// Get the main axis gap.
     pub fn main_axis_gap(&self) -> u16 {
         self.options.main_axis_gap
@@ -791,7 +876,7 @@ impl FlexBox {
     }
 }
 
-impl View for FlexBox {
+impl View for Flexbox {
     /// Draw this view using the printer.
     fn draw(&self, printer: &cursive_core::Printer<'_, '_>) {
         // TODO: Move all the calculations from draw to layout phase. Now `windows()` has to
@@ -856,7 +941,7 @@ mod test {
 
     #[test]
     fn justify_content_single_item() {
-        let mut flexbox = FlexBox::from(vec![TextView::new("Hello").into_boxed_view()]);
+        let mut flexbox = Flexbox::from(vec![TextView::new("Hello").into_boxed_view()]);
 
         // JustifyContent::FlexStart
         flexbox.set_justify_content(JustifyContent::FlexStart);
@@ -969,7 +1054,7 @@ mod test {
 
     #[test]
     fn justify_content_multiple_items() {
-        let mut flexbox = FlexBox::from(vec![
+        let mut flexbox = Flexbox::from(vec![
             TextView::new("Hello").into_boxed_view(),
             TextView::new("flexbox").into_boxed_view(),
         ]);

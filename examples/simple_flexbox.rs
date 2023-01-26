@@ -4,7 +4,7 @@ use cursive::{
     views::{Layer, Panel, TextView},
     Cursive, CursiveExt,
 };
-use cursive_flexbox::{AlignContent, AlignItems, FlexBox, FlexDirection, FlexWrap, JustifyContent};
+use cursive_flexbox::{AlignContent, AlignItems, FlexDirection, FlexWrap, Flexbox, JustifyContent};
 
 fn main() {
     // Create a cursive object. This is the basic object that handles the ui and event loop.
@@ -19,7 +19,7 @@ fn main() {
     });
 
     // Create the flexbox and put some items in it.
-    let mut flexbox = FlexBox::from(vec![
+    let mut flexbox = Flexbox::from(vec![
         Panel::new(Layer::with_color(
             TextView::new("This is one quick line.\nAnother quick line.\nAnd yet another line."),
             ColorStyle::back(cursive::theme::BaseColor::Green.dark()),
