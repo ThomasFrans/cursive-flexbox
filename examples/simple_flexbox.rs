@@ -4,7 +4,8 @@ use cursive::{
     views::{Layer, Panel, TextView},
     Cursive, CursiveExt,
 };
-use cursive_flexbox::{AlignContent, AlignItems, FlexDirection, FlexWrap, Flexbox, JustifyContent};
+
+use cursive_flexbox::prelude::*;
 
 fn main() {
     // Create a cursive object. This is the basic object that handles the ui and event loop.
