@@ -1,6 +1,6 @@
 [package]
 name = "cursive-flexbox"
-version = "0.1.0"
+version = "0.2.0"
 edition = "2021"
 authors = ["Thomas Frans"]
 description = "Flexbox view for Cursive"
@@ -9,7 +9,7 @@ repository = "https://github.com/ThomasFrans/cursive-flexbox"
 license = "MIT"
 keywords = ["tui", "flexbox", "cursive"]
 categories = ["command-line-interface"]
-exclude = ["/.github", "/TODO.md", "/docs/status.md"]
+exclude = ["/.github"]
 
 [dependencies]
 # Core cursive functionality needed to implement new cursive libraries.
