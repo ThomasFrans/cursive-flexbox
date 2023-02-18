@@ -32,22 +32,6 @@ impl<T> Layout<T> {
     pub fn iter(&self) -> Iter<'_, PlacedElement<T>> {
         self.into_iter()
     }
-
-    /// Return the size of this layout.
-    pub fn size(&self) -> XY<usize> {
-        let mut max_size = XY::from((0, 0));
-
-        self.iter().for_each(|item| {
-            if item.position.right() > max_size.x {
-                max_size.x = item.position.right() + 1;
-            }
-            if item.position.bottom() > max_size.y {
-                max_size.y = item.position.bottom() + 1;
-            }
-        });
-
-        max_size
-    }
 }
 
 impl<T> IntoIterator for Layout<T> {

@@ -488,27 +488,29 @@ impl MainAxis {
                 // Axis contains elements that want the free space. Give it to them, don't use
                 // justify-content.
 
-                let mut added_space = 0;
+                let mut current_item_assigned_space = 0;
                 let item_main_axis_size =
                     layout.flexitem_main_axis_size(&mut RefCell::borrow_mut(&item));
                 if remaining_grow_factor > 0 {
-                    added_space = (RefCell::borrow(&item).flex_grow as usize
-                        / remaining_grow_factor)
-                        * assignable_free_space;
+                    current_item_assigned_space =
+                        ((RefCell::borrow(&item).flex_grow as f64 / remaining_grow_factor as f64)
+                            * assignable_free_space as f64) as usize;
                 }
 
                 match layout.options.direction {
                     FlexDirection::Row => {
                         start_x = offset;
-                        width = item_main_axis_size + added_space;
+                        width = item_main_axis_size + current_item_assigned_space;
                     },
                     FlexDirection::Column => {
                         start_y = offset;
-                        height = item_main_axis_size + added_space;
+                        height = item_main_axis_size + current_item_assigned_space;
                     },
                 }
-                offset += item_main_axis_size + layout.options.main_axis_gap as usize + added_space;
-                assignable_free_space -= added_space;
+                offset += item_main_axis_size
+                    + layout.options.main_axis_gap as usize
+                    + current_item_assigned_space;
+                assignable_free_space -= current_item_assigned_space;
                 remaining_grow_factor -= RefCell::borrow(&item).flex_grow as usize;
             } else {
                 // Axis doesn't contain elements that want free space. Use justify-content property
@@ -957,40 +959,37 @@ impl View for Flexbox {
     fn required_size(&mut self, constraint: cursive_core::Vec2) -> cursive_core::Vec2 {
         // PERF: Cache the values that the previous layout was generated with and regenerate if
         // cached version is outdated.
-        let layout = self.generate_layout(constraint);
-        layout.size()
+        constraint
     }
 
     fn on_event(
         &mut self,
         mut event: cursive_core::event::Event,
     ) -> cursive_core::event::EventResult {
-        if let Some(active_child) = self.focused {
-            if let cursive_core::event::Event::Mouse {
-                ref mut offset,
-                ref mut position,
-                ..
-            } = event
-            {
-                if let Some(ref layout) = self.layout {
-                    if let Some(placed_element) =
-                        layout.element_at(global_to_view_coordinates(*position, *offset))
-                    {
-                        *offset = *offset + placed_element.position.top_left();
-                        RefCell::borrow_mut(&placed_element.element)
-                            .view
-                            .on_event(event)
-                    } else {
-                        EventResult::Ignored
-                    }
+        if let cursive_core::event::Event::Mouse {
+            ref mut offset,
+            ref mut position,
+            ..
+        } = event
+        {
+            if let Some(ref layout) = self.layout {
+                if let Some(placed_element) =
+                    layout.element_at(global_to_view_coordinates(*position, *offset))
+                {
+                    *offset = *offset + placed_element.position.top_left();
+                    RefCell::borrow_mut(&placed_element.element)
+                        .view
+                        .on_event(event)
                 } else {
                     EventResult::Ignored
                 }
             } else {
-                RefCell::borrow_mut(&self.content[active_child])
-                    .view
-                    .on_event(event)
+                EventResult::Ignored
             }
+        } else if let Some(active_child) = self.focused {
+            RefCell::borrow_mut(&self.content[active_child])
+                .view
+                .on_event(event)
         } else {
             EventResult::Ignored
         }
