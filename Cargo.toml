@@ -17,3 +17,5 @@ cursive_core = "0.3.7"
 
 [dev-dependencies]
 cursive = "0.20.0"
+crossbeam = "0.8.2"
+insta = "1.28.0"

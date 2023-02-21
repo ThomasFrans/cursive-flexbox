@@ -1,0 +1,18 @@
+---
+source: tests/basic.rs
+expression: frames.try_iter().last().unwrap()
+---
+captured piece:
+x01234567890123456789x
+0┌───┐┌───┐┌────┐    |
+1│Ape││Bat││Dog │    |
+2│   ││Cat││Ewe │    |
+3│   ││   ││Frog│    |
+4└───┘└───┘└────┘    |
+5                    |
+6                    |
+7                    |
+8                    |
+9                    |
+x--------------------x
+
