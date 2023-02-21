@@ -1,0 +1,10 @@
+---
+source: tests/basic.rs
+expression: tsiv.last_screen()
+---
+captured piece:
+x01234567890123456789x
+0|Ape|  |Bat|  |Cat| |
+1                    |
+x--------------------x
+

@@ -1,0 +1,17 @@
+---
+source: tests/basic.rs
+expression: frames.try_iter().last().unwrap()
+---
+captured piece:
+x01234567890123456789x
+0                    |
+1Ape                 |
+2                    |
+3                    |
+4Bat                 |
+5                    |
+6                    |
+7Cat                 |
+8                    |
+x--------------------x
+

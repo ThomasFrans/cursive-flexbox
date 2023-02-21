@@ -1,0 +1,13 @@
+---
+source: tests/basic.rs
+expression: frames.try_iter().last().unwrap()
+---
+captured piece:
+x01234567890123456789x
+0Ape                 |
+1Bat Cat             |
+2Dog Ewe Fly         |
+3                    |
+4                    |
+x--------------------x
+
