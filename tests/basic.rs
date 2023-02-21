@@ -347,3 +347,22 @@ fn test_align_content_flexend() {
     });
     assert_display_snapshot!(tsiv.last_screen());
 }
+
+#[test]
+fn test_align_content_stretch() {
+    let mut tsiv = TestCursive::new(|siv: &mut cursive::Cursive| {
+        let mut flexbox = Flexbox::from(vec![
+            TextView::new("|Ape|"),
+            TextView::new("|Bat|"),
+            TextView::new("|Cat|"),
+            TextView::new("|Dog|"),
+            TextView::new("|Elk|"),
+            TextView::new("|Fly|"),
+            TextView::new("|Gnu|"),
+        ]);
+        flexbox.set_flex_wrap(FlexWrap::Wrap);
+        flexbox.set_align_content(AlignContent::Stretch);
+        siv.add_fullscreen_layer(flexbox);
+    });
+    assert_display_snapshot!(tsiv.last_screen());
+}

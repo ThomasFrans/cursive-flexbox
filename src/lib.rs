@@ -276,14 +276,6 @@ impl FlexboxLayout {
                     }
                     assignable_free_space = 0;
                 },
-                AlignContent::Stretch => {
-                    let assigned_space =
-                        assignable_free_space / (self.main_axes.len() - axis_index);
-                    if assignable_free_space > 0 {
-                        cross_offset += assigned_space;
-                    }
-                    assignable_free_space -= assigned_space;
-                },
                 AlignContent::SpaceAround => {
                     let assigned_space =
                         assignable_free_space / (self.main_axes.len() * 2 - axis_index * 2);
@@ -311,6 +303,14 @@ impl FlexboxLayout {
                         }
                         assignable_free_space -= assigned_space;
                     }
+                },
+                AlignContent::Stretch => {
+                    let assigned_space =
+                        assignable_free_space / (self.main_axes.len() - axis_index);
+                    if assignable_free_space > 0 {
+                        cross_offset += assigned_space;
+                    }
+                    assignable_free_space -= assigned_space;
                 },
                 AlignContent::SpaceAround => {
                     let assigned_space =
