@@ -235,10 +235,11 @@ impl Display for AlignContent {
     }
 }
 
-/// An actual layout of a flexbox with real dimensions.
+/// A generator for flexbox type layouts. It implements the flexbox layout algorithm according to
+/// the CSS3 specification where it makes sense in a TUI context.
 /// <https://developer.mozilla.org/en-US/docs/Learn/CSS/CSS_layout/Flexbox#the_flex_model>
 #[derive(Default)]
-struct FlexboxLayout {
+struct FlexLayoutGenerator {
     /// The dimensions of the container.
     size: XY<usize>,
     /// Options for this particular layout of the flexbox.
@@ -254,7 +255,7 @@ enum FlexboxError {
     AxisFull,
 }
 
-impl FlexboxLayout {
+impl FlexLayoutGenerator {
     /// Return all the child items along with their absolute position. This makes drawing the
     /// flexbox very simple.
     pub fn windows(&mut self) -> Vec<(Rc<RefCell<FlexItem>>, Rect)> {
@@ -328,6 +329,17 @@ impl FlexboxLayout {
         windows
     }
 
+    /// Return the minimum size needed for the cross axis.
+    pub fn cross_axis_size(&self) -> usize {
+        let mut minimum_cross_axis_size = 0;
+
+        for main_axis in &self.main_axes {
+            minimum_cross_axis_size += main_axis.cross_axis_size(self);
+        }
+
+        minimum_cross_axis_size
+    }
+
     /// Return the amount of left over space on the cross axis.
     pub fn cross_axis_free_space(&self) -> usize {
         let mut used_space = 0;
@@ -346,12 +358,12 @@ impl FlexboxLayout {
 
     /// Generate the actual layout for the flexbox with `content` and given `width` and `height`.
     pub fn generate(
-        content: &[Weak<RefCell<FlexItem>>],
+        content: &[Rc<RefCell<FlexItem>>],
         width: usize,
         height: usize,
         options: FlexBoxOptions,
     ) -> Rc<RefCell<Self>> {
-        let layout = Rc::new(RefCell::new(FlexboxLayout {
+        let layout = Rc::new(RefCell::new(FlexLayoutGenerator {
             size: XY::from((width, height)),
             options,
             main_axes: Vec::new(),
@@ -414,14 +426,14 @@ impl FlexboxLayout {
 /// accomodate given the size of the main axis and the gapsize of the main axis.
 struct MainAxis {
     /// The items in this main axis.
-    items: Vec<Weak<RefCell<FlexItem>>>,
+    items: Vec<Rc<RefCell<FlexItem>>>,
     /// Cache value for the remaining free space in this axis.
     free_space: usize,
 }
 
 impl MainAxis {
     /// Create a new main axis part for the given layout.
-    pub fn new(layout: Weak<RefCell<FlexboxLayout>>) -> Self {
+    pub fn new(layout: Weak<RefCell<FlexLayoutGenerator>>) -> Self {
         let layout_upgraded = layout.upgrade().unwrap();
         let free_space = match RefCell::borrow(&layout_upgraded).options.direction {
             FlexDirection::Row => RefCell::borrow(&layout_upgraded).size.x,
@@ -435,27 +447,19 @@ impl MainAxis {
 
     /// Return the cross axis size. The size of the cross axis is the maximum size of its elements
     /// along the cross axis.
-    pub fn cross_axis_size(&self, layout: &FlexboxLayout) -> usize {
+    pub fn cross_axis_size(&self, layout: &FlexLayoutGenerator) -> usize {
         let mut maximum_item_cross_axis_size = 0;
         match layout.options.direction {
             FlexDirection::Row => {
                 for item in &self.items {
-                    maximum_item_cross_axis_size = maximum_item_cross_axis_size.max(
-                        RefCell::borrow_mut(&item.upgrade().unwrap())
-                            .view
-                            .required_size(layout.size)
-                            .y,
-                    );
+                    maximum_item_cross_axis_size = maximum_item_cross_axis_size
+                        .max(RefCell::borrow_mut(item).view.required_size(layout.size).y);
                 }
             },
             FlexDirection::Column => {
                 for item in &self.items {
-                    maximum_item_cross_axis_size = maximum_item_cross_axis_size.max(
-                        RefCell::borrow_mut(&item.upgrade().unwrap())
-                            .view
-                            .required_size(layout.size)
-                            .x,
-                    );
+                    maximum_item_cross_axis_size = maximum_item_cross_axis_size
+                        .max(RefCell::borrow_mut(item).view.required_size(layout.size).x);
                 }
             },
         }
@@ -465,7 +469,7 @@ impl MainAxis {
 
     /// Returns the flexitems and their corresponding windows in the local coordinates (relative to
     /// the topleft of the bounding box of this axis.
-    pub fn windows(&self, layout: &FlexboxLayout) -> Vec<(Rc<RefCell<FlexItem>>, Rect)> {
+    pub fn windows(&self, layout: &FlexLayoutGenerator) -> Vec<(Rc<RefCell<FlexItem>>, Rect)> {
         let mut windows = Vec::new();
         let mut offset = 0;
         let mut assignable_free_space = self.free_space;
@@ -473,12 +477,7 @@ impl MainAxis {
         let mut remaining_grow_factor = combined_grow_factor;
         let cross_axis_size = self.cross_axis_size(layout);
 
-        for (item_index, item) in self
-            .items
-            .iter()
-            .map(|item| item.upgrade().unwrap())
-            .enumerate()
-        {
+        for (item_index, item) in self.items.iter().map(Clone::clone).enumerate() {
             let mut start_x = 0;
             let mut start_y = 0;
             let mut width = 1;
@@ -701,14 +700,13 @@ impl MainAxis {
     /// Try to add `item` to this main axis, fail if this axis can't accomodate the item.
     pub fn add_item(
         &mut self,
-        item: Weak<RefCell<FlexItem>>,
-        layout: &mut FlexboxLayout,
+        item: Rc<RefCell<FlexItem>>,
+        layout: &mut FlexLayoutGenerator,
     ) -> Result<(), FlexboxError> {
-        let upgraded_item = item.upgrade().unwrap();
-        if self.can_accomodate(&mut RefCell::borrow_mut(&upgraded_item), layout) {
-            self.free_space = self.free_space.saturating_sub(
-                layout.flexitem_main_axis_size(&mut RefCell::borrow_mut(&upgraded_item)),
-            );
+        if self.can_accomodate(&mut RefCell::borrow_mut(&item), layout) {
+            self.free_space = self
+                .free_space
+                .saturating_sub(layout.flexitem_main_axis_size(&mut RefCell::borrow_mut(&item)));
 
             // Only add gaps if there is already an item.
             if self.number_of_items() >= 1 {
@@ -728,7 +726,7 @@ impl MainAxis {
     /// Return whether this axis can accomodate `item` with the amount of free space it has left. A
     /// main axis can accomodate an item if either it is the first axis in a non-wrapped flexbox,
     /// or it has enough space for the item and possible gap that would be added.
-    pub fn can_accomodate(&self, item: &mut FlexItem, layout: &mut FlexboxLayout) -> bool {
+    pub fn can_accomodate(&self, item: &mut FlexItem, layout: &mut FlexLayoutGenerator) -> bool {
         if let FlexWrap::NoWrap = layout.options.wrap {
             // There can only be one main axis in a non-wrapping layout.
             layout.main_axes.len() == 1
@@ -754,7 +752,7 @@ impl MainAxis {
     pub fn combined_grow_factor(&self) -> usize {
         let mut total_grow_factor = 0usize;
         self.items.iter().for_each(|item| {
-            total_grow_factor += RefCell::borrow(&item.upgrade().unwrap()).flex_grow as usize;
+            total_grow_factor += RefCell::borrow(item).flex_grow as usize;
         });
         total_grow_factor
     }
@@ -896,8 +894,8 @@ impl Flexbox {
 
     /// Generate the concrete layout of this flexbox with the given constraints.
     fn generate_layout(&self, constraints: XY<usize>) -> Layout<Rc<RefCell<FlexItem>>> {
-        let layout = FlexboxLayout::generate(
-            &self.content.iter().map(Rc::downgrade).collect::<Vec<_>>(),
+        let layout = FlexLayoutGenerator::generate(
+            &self.content,
             constraints.x,
             constraints.y,
             self.options,
@@ -957,9 +955,15 @@ impl View for Flexbox {
     /// Given `constraint`, return the minimal required size the printer for this view should be.
     /// `constraint` is the maximum possible size for the printer.
     fn required_size(&mut self, constraint: cursive_core::Vec2) -> cursive_core::Vec2 {
-        // PERF: Cache the values that the previous layout was generated with and regenerate if
-        // cached version is outdated.
-        constraint
+        let layout_generator =
+            FlexLayoutGenerator::generate(&self.content, constraint.x, constraint.y, self.options);
+        let cross_axis_size = RefCell::borrow(&layout_generator).cross_axis_size();
+
+        match self.options.direction {
+            FlexDirection::Row => (constraint.x, cross_axis_size),
+            FlexDirection::Column => (cross_axis_size, constraint.y),
+        }
+        .into()
     }
 
     fn on_event(
