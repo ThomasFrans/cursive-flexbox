@@ -26,7 +26,6 @@ use cursive_core::{event::EventResult, view::IntoBoxedView, Rect, Vec2, View, XY
 use layout::{Layout, PlacedElement};
 
 /// A container that can be used to display a list of items in a flexible way.
-#[derive(Default)]
 pub struct Flexbox {
     /// The content of the flexbox. Unlike some flexboxes, order is always dictated by the order of
     /// the items in `content`. There is no way to overwrite this.
@@ -37,6 +36,20 @@ pub struct Flexbox {
     focused: Option<usize>,
     /// The actual layout of the items.
     layout: Option<Layout<Rc<RefCell<FlexItem>>>>,
+    /// Whether the layout needs to be regenerated for the current state.
+    needs_relayout: bool,
+}
+
+impl Default for Flexbox {
+    fn default() -> Self {
+        Self {
+            content: Default::default(),
+            options: Default::default(),
+            focused: Default::default(),
+            layout: Default::default(),
+            needs_relayout: true,
+        }
+    }
 }
 
 /// A single item in a Flexbox.
@@ -782,11 +795,13 @@ impl Flexbox {
     /// Add a view to the end.
     pub fn push(&mut self, item: impl Into<FlexItem>) {
         self.content.push(Rc::new(RefCell::new(item.into())));
+        self.needs_relayout = true;
     }
 
     /// Remove all items.
     pub fn clear(&mut self) {
         self.content.clear();
+        self.needs_relayout = true;
     }
 
     /// Insert a view at `index`.
@@ -796,6 +811,7 @@ impl Flexbox {
     pub fn insert(&mut self, index: usize, item: impl Into<FlexItem>) {
         self.content
             .insert(index, Rc::new(RefCell::new(item.into())));
+        self.needs_relayout = true;
     }
 
     /// Set the grow factor of an item.
@@ -804,6 +820,7 @@ impl Flexbox {
     /// Panics if `index >= self.len()`.
     pub fn set_flex_grow(&mut self, index: usize, flex_grow: u8) {
         Rc::as_ref(&self.content[index]).borrow_mut().flex_grow = flex_grow;
+        self.needs_relayout = true;
     }
 
     /// Returns the number of items in the flexbox.
@@ -832,6 +849,7 @@ impl Flexbox {
     /// Set the fixed gap between elements on the main axis.
     pub fn set_main_axis_gap(&mut self, gap: u32) {
         self.options.main_axis_gap = gap;
+        self.needs_relayout = true;
     }
 
     /// Gap between the main axes.
@@ -842,6 +860,7 @@ impl Flexbox {
     /// Set the fixed gap between the main axes.
     pub fn set_cross_axis_gap(&mut self, gap: u32) {
         self.options.cross_axis_gap = gap;
+        self.needs_relayout = true;
     }
 
     /// Get the justify-content option.
@@ -852,6 +871,7 @@ impl Flexbox {
     /// Set the justify-content option.
     pub fn set_justify_content(&mut self, justify_content: JustifyContent) {
         self.options.justification = justify_content;
+        self.needs_relayout = true;
     }
 
     /// Get the align-items option.
@@ -862,6 +882,7 @@ impl Flexbox {
     /// Set the align-items option.
     pub fn set_align_items(&mut self, item_alignment: AlignItems) {
         self.options.item_alignment = item_alignment;
+        self.needs_relayout = true;
     }
 
     /// Get the align-content option.
@@ -872,6 +893,7 @@ impl Flexbox {
     /// Set the align-content option.
     pub fn set_align_content(&mut self, axes_alignment: AlignContent) {
         self.options.axes_alignment = axes_alignment;
+        self.needs_relayout = true;
     }
 
     /// Get the flex-direction option.
@@ -882,6 +904,7 @@ impl Flexbox {
     /// Set the direction of the main axis.
     pub fn set_flex_direction(&mut self, direction: FlexDirection) {
         self.options.direction = direction;
+        self.needs_relayout = true;
     }
 
     /// Get the flex-wrap option.
@@ -892,6 +915,7 @@ impl Flexbox {
     /// Set the wrapping behavior.
     pub fn set_flex_wrap(&mut self, wrap: FlexWrap) {
         self.options.wrap = wrap;
+        self.needs_relayout = true;
     }
 
     /// Generate the concrete layout of this flexbox with the given constraints.
@@ -943,6 +967,8 @@ impl View for Flexbox {
                 .view
                 .layout(placed_element.position.size());
         }
+
+        self.needs_relayout = false;
     }
 
     /// Return true if this view needs a relayout before the next call to `draw()`. If the view's
@@ -951,7 +977,7 @@ impl View for Flexbox {
     fn needs_relayout(&self) -> bool {
         // TODO: Reimplement proper detection of relayout requirements. Returning true always works
         // but isn't efficient!
-        true
+        self.needs_relayout
     }
 
     /// Given `constraint`, return the minimal required size the printer for this view should be.
