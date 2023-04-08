@@ -1,13 +1,13 @@
 [package]
 name = "cursive-flexbox"
-version = "0.2.0"
+version = "0.3.0"
 edition = "2021"
-authors = ["Thomas Frans"]
+authors = ["Thomas Frans <franske2000@gmail.com>"]
 description = "Flexbox view for Cursive"
 readme = "README.md"
 repository = "https://github.com/ThomasFrans/cursive-flexbox"
 license = "MIT"
-keywords = ["tui", "flexbox", "cursive"]
+keywords = ["tui", "flexbox", "cursive", "layout"]
 categories = ["command-line-interface"]
 exclude = ["/.github"]
 
