@@ -22,7 +22,12 @@ use std::{
     rc::{Rc, Weak},
 };
 
-use cursive_core::{event::EventResult, view::IntoBoxedView, Rect, Vec2, View, XY};
+use cursive_core::{
+    direction::{Absolute, Direction, Relative},
+    event::{Event, EventResult, Key},
+    view::IntoBoxedView,
+    Rect, Vec2, View, XY,
+};
 use layout::{Layout, PlacedElement};
 
 /// A container that can be used to display a list of items in a flexible way.
@@ -940,16 +945,54 @@ impl Flexbox {
             });
         result
     }
+
+    /// Attempt to focus the given item from the given source.
+    fn try_focus(&mut self, child_index: usize, source: Direction) -> Option<EventResult> {
+        if let Some(view) = self.content.get(child_index) {
+            if let Ok(result) = view.borrow_mut().view.take_focus(source) {
+                self.focused = Some(child_index);
+                return Some(result);
+            }
+        }
+        None
+    }
+
+    /// Handle relative focus cycle towards the front or back of the container.
+    fn move_focus_rel(&mut self, target: Relative) -> EventResult {
+        let adv = if target == Relative::Front {
+            -1
+        } else {
+            1
+        };
+        let child_count = self.content.len();
+        let get_next = |n| (n as isize + adv).rem_euclid(child_count as isize) as usize;
+        let mut attempts = child_count - 1;
+        let mut next = if let Some(n) = self.focused {
+            get_next(n)
+        } else {
+            0
+        };
+        while attempts > 0 {
+            if let Some(result) = self.try_focus(next, Direction::Rel(target)) {
+                return result;
+            }
+            next = get_next(next);
+            attempts -= 1;
+        }
+        EventResult::Ignored
+    }
 }
 
 impl View for Flexbox {
     /// Draw this view using the printer.
     fn draw(&self, printer: &cursive_core::Printer<'_, '_>) {
         if let Some(ref layout) = self.layout {
-            for placed_element in layout {
-                RefCell::borrow(&placed_element.element)
-                    .view
-                    .draw(&printer.windowed(placed_element.position));
+            for (i, placed_element) in layout.iter().enumerate() {
+                RefCell::borrow(&placed_element.element).view.draw(
+                    &printer
+                        .windowed(placed_element.position)
+                        .focused(Some(i) == self.focused),
+                );
             }
         }
     }
@@ -992,7 +1035,13 @@ impl View for Flexbox {
         &mut self,
         mut event: cursive_core::event::Event,
     ) -> cursive_core::event::EventResult {
-        if let cursive_core::event::Event::Mouse {
+        if let Some(result) = match event {
+            Event::Shift(Key::Tab) => Some(self.move_focus_rel(Relative::Front)),
+            Event::Key(Key::Tab) => Some(self.move_focus_rel(Relative::Back)),
+            _ => None,
+        } {
+            result
+        } else if let cursive_core::event::Event::Mouse {
             ref mut offset,
             ref mut position,
             ..
@@ -1003,9 +1052,18 @@ impl View for Flexbox {
                     layout.element_at(global_to_view_coordinates(*position, *offset))
                 {
                     *offset = *offset + placed_element.position.top_left();
-                    RefCell::borrow_mut(&placed_element.element)
-                        .view
-                        .on_event(event)
+                    if let Some(index) = self
+                        .content
+                        .iter()
+                        .position(|v| v.as_ptr() == placed_element.element.as_ptr())
+                    {
+                        self.try_focus(index, Direction::Abs(Absolute::None));
+                        self.content[index].borrow_mut().view.on_event(event)
+                    } else {
+                        RefCell::borrow_mut(&placed_element.element)
+                            .view
+                            .on_event(event)
+                    }
                 } else {
                     EventResult::Ignored
                 }
