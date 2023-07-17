@@ -959,7 +959,7 @@ impl Flexbox {
 
     /// Handle relative focus cycle towards the front or back of the container.
     fn move_focus_rel(&mut self, target: Relative) -> EventResult {
-        let adv = if target == Relative::Front {
+        let adv = if target == Relative::Back {
             -1
         } else {
             1
@@ -1036,8 +1036,8 @@ impl View for Flexbox {
         mut event: cursive_core::event::Event,
     ) -> cursive_core::event::EventResult {
         if let Some(result) = match event {
-            Event::Shift(Key::Tab) => Some(self.move_focus_rel(Relative::Front)),
-            Event::Key(Key::Tab) => Some(self.move_focus_rel(Relative::Back)),
+            Event::Shift(Key::Tab) => Some(self.move_focus_rel(Relative::Back)),
+            Event::Key(Key::Tab) => Some(self.move_focus_rel(Relative::Front)),
             _ => None,
         } {
             result
