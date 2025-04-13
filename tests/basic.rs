@@ -5,7 +5,7 @@ use cursive::event::Event;
 use cursive::views::{Panel, TextView};
 use cursive::XY;
 use cursive_flexbox::{AlignContent, AlignItems, FlexDirection, FlexWrap, Flexbox, JustifyContent};
-use insta::assert_display_snapshot;
+use insta::assert_snapshot;
 
 // The TestCursive code below was copied and altered from deinstabpel/cursive-tabs.
 // https://github.com/deinstapel/cursive-tabs
@@ -135,7 +135,7 @@ fn test_justify_content_flexstart_single_item() {
         flexbox.set_justify_content(JustifyContent::FlexStart);
         siv.add_fullscreen_layer(flexbox);
     });
-    assert_display_snapshot!(frames.try_iter().last().unwrap())
+    assert_snapshot!(frames.try_iter().last().unwrap())
 }
 
 #[test]
@@ -145,7 +145,7 @@ fn test_justify_content_flexend_single_item() {
         flexbox.set_justify_content(JustifyContent::FlexEnd);
         siv.add_fullscreen_layer(flexbox);
     });
-    assert_display_snapshot!(frames.try_iter().last().unwrap())
+    assert_snapshot!(frames.try_iter().last().unwrap())
 }
 
 #[test]
@@ -155,7 +155,7 @@ fn test_justify_content_center_single_item() {
         flexbox.set_justify_content(JustifyContent::Center);
         siv.add_fullscreen_layer(flexbox);
     });
-    assert_display_snapshot!(frames.try_iter().last().unwrap())
+    assert_snapshot!(frames.try_iter().last().unwrap())
 }
 
 #[test]
@@ -165,7 +165,7 @@ fn test_justify_content_space_between_single_item() {
         flexbox.set_justify_content(JustifyContent::SpaceBetween);
         siv.add_fullscreen_layer(flexbox);
     });
-    assert_display_snapshot!(frames.try_iter().last().unwrap())
+    assert_snapshot!(frames.try_iter().last().unwrap())
 }
 
 #[test]
@@ -175,7 +175,7 @@ fn test_justify_content_space_around_single_item() {
         flexbox.set_justify_content(JustifyContent::SpaceAround);
         siv.add_fullscreen_layer(flexbox);
     });
-    assert_display_snapshot!(frames.try_iter().last().unwrap())
+    assert_snapshot!(frames.try_iter().last().unwrap())
 }
 
 #[test]
@@ -185,7 +185,7 @@ fn test_justify_content_space_evenly_single_item() {
         flexbox.set_justify_content(JustifyContent::SpaceEvenly);
         siv.add_fullscreen_layer(flexbox);
     });
-    assert_display_snapshot!(frames.try_iter().last().unwrap())
+    assert_snapshot!(frames.try_iter().last().unwrap())
 }
 
 #[test]
@@ -199,7 +199,7 @@ fn test_justify_content_flexstart_multiple_items() {
         flexbox.set_justify_content(JustifyContent::FlexStart);
         siv.add_fullscreen_layer(flexbox);
     });
-    assert_display_snapshot!(frames.try_iter().last().unwrap())
+    assert_snapshot!(frames.try_iter().last().unwrap())
 }
 
 #[test]
@@ -213,7 +213,7 @@ fn test_justify_content_flexend_multiple_items() {
         flexbox.set_justify_content(JustifyContent::FlexEnd);
         siv.add_fullscreen_layer(flexbox);
     });
-    assert_display_snapshot!(frames.try_iter().last().unwrap())
+    assert_snapshot!(frames.try_iter().last().unwrap())
 }
 
 #[test]
@@ -227,7 +227,7 @@ fn test_justify_content_center_multiple_items() {
         flexbox.set_justify_content(JustifyContent::Center);
         siv.add_fullscreen_layer(flexbox);
     });
-    assert_display_snapshot!(frames.try_iter().last().unwrap())
+    assert_snapshot!(frames.try_iter().last().unwrap())
 }
 
 #[test]
@@ -241,7 +241,7 @@ fn test_justify_content_space_between_multiple_items() {
         flexbox.set_justify_content(JustifyContent::SpaceBetween);
         siv.add_fullscreen_layer(flexbox);
     });
-    assert_display_snapshot!(frames.try_iter().last().unwrap())
+    assert_snapshot!(frames.try_iter().last().unwrap())
 }
 
 #[test]
@@ -255,7 +255,7 @@ fn test_justify_content_space_around_multiple_items() {
         flexbox.set_justify_content(JustifyContent::SpaceAround);
         siv.add_fullscreen_layer(flexbox);
     });
-    assert_display_snapshot!(frames.try_iter().last().unwrap())
+    assert_snapshot!(frames.try_iter().last().unwrap())
 }
 
 #[test]
@@ -269,7 +269,7 @@ fn test_justify_content_space_evenly_multiple_items() {
         flexbox.set_justify_content(JustifyContent::SpaceEvenly);
         siv.add_fullscreen_layer(flexbox);
     });
-    assert_display_snapshot!(frames.try_iter().last().unwrap())
+    assert_snapshot!(frames.try_iter().last().unwrap())
 }
 
 #[test]
@@ -283,7 +283,7 @@ fn test_align_items_flexstart() {
         flexbox.set_align_items(AlignItems::FlexStart);
         siv.add_fullscreen_layer(flexbox);
     });
-    assert_display_snapshot!(frames.try_iter().last().unwrap())
+    assert_snapshot!(frames.try_iter().last().unwrap())
 }
 
 #[test]
@@ -297,7 +297,7 @@ fn test_align_items_flexend() {
         flexbox.set_align_items(AlignItems::FlexEnd);
         siv.add_fullscreen_layer(flexbox);
     });
-    assert_display_snapshot!(frames.try_iter().last().unwrap())
+    assert_snapshot!(frames.try_iter().last().unwrap())
 }
 
 #[test]
@@ -311,7 +311,7 @@ fn test_align_items_center() {
         flexbox.set_align_items(AlignItems::Center);
         siv.add_fullscreen_layer(flexbox);
     });
-    assert_display_snapshot!(frames.try_iter().last().unwrap())
+    assert_snapshot!(frames.try_iter().last().unwrap())
 }
 
 #[test]
@@ -325,7 +325,7 @@ fn test_align_items_stretch() {
         flexbox.set_align_items(AlignItems::Stretch);
         siv.add_fullscreen_layer(flexbox);
     });
-    assert_display_snapshot!(frames.try_iter().last().unwrap())
+    assert_snapshot!(frames.try_iter().last().unwrap())
 }
 
 #[test]
@@ -344,7 +344,7 @@ fn test_align_content_flexstart() {
         flexbox.set_align_content(AlignContent::FlexStart);
         siv.add_fullscreen_layer(flexbox);
     });
-    assert_display_snapshot!(tsiv.last_screen());
+    assert_snapshot!(tsiv.last_screen());
 }
 
 #[test]
@@ -363,7 +363,7 @@ fn test_align_content_flexend() {
         flexbox.set_align_content(AlignContent::FlexEnd);
         siv.add_fullscreen_layer(flexbox);
     });
-    assert_display_snapshot!(tsiv.last_screen());
+    assert_snapshot!(tsiv.last_screen());
 }
 
 #[test]
@@ -382,7 +382,7 @@ fn test_align_content_stretch() {
         flexbox.set_align_content(AlignContent::Stretch);
         siv.add_fullscreen_layer(flexbox);
     });
-    assert_display_snapshot!(tsiv.last_screen());
+    assert_snapshot!(tsiv.last_screen());
 }
 
 #[test]
@@ -401,7 +401,7 @@ fn test_align_content_center() {
         flexbox.set_align_content(AlignContent::Center);
         siv.add_fullscreen_layer(flexbox);
     });
-    assert_display_snapshot!(tsiv.last_screen());
+    assert_snapshot!(tsiv.last_screen());
 }
 
 #[test]
@@ -420,7 +420,7 @@ fn test_align_content_space_between() {
         flexbox.set_align_content(AlignContent::SpaceBetween);
         siv.add_fullscreen_layer(flexbox);
     });
-    assert_display_snapshot!(tsiv.last_screen());
+    assert_snapshot!(tsiv.last_screen());
 }
 
 #[test]
@@ -439,7 +439,7 @@ fn test_align_content_space_around() {
         flexbox.set_align_content(AlignContent::SpaceAround);
         siv.add_fullscreen_layer(flexbox);
     });
-    assert_display_snapshot!(tsiv.last_screen());
+    assert_snapshot!(tsiv.last_screen());
 }
 
 #[test]
@@ -453,7 +453,7 @@ fn test_justify_content_flexstart_single_item_column() {
         },
         (20, 3),
     );
-    assert_display_snapshot!(frames.try_iter().last().unwrap())
+    assert_snapshot!(frames.try_iter().last().unwrap())
 }
 
 #[test]
@@ -467,7 +467,7 @@ fn test_justify_content_flexend_single_item_column() {
         },
         (20, 3),
     );
-    assert_display_snapshot!(frames.try_iter().last().unwrap())
+    assert_snapshot!(frames.try_iter().last().unwrap())
 }
 
 #[test]
@@ -481,7 +481,7 @@ fn test_justify_content_center_single_item_column() {
         },
         (20, 5),
     );
-    assert_display_snapshot!(frames.try_iter().last().unwrap())
+    assert_snapshot!(frames.try_iter().last().unwrap())
 }
 
 #[test]
@@ -495,7 +495,7 @@ fn test_justify_content_space_between_single_item_column() {
         },
         (20, 5),
     );
-    assert_display_snapshot!(frames.try_iter().last().unwrap())
+    assert_snapshot!(frames.try_iter().last().unwrap())
 }
 
 #[test]
@@ -509,7 +509,7 @@ fn test_justify_content_space_around_single_item_column() {
         },
         (20, 5),
     );
-    assert_display_snapshot!(frames.try_iter().last().unwrap())
+    assert_snapshot!(frames.try_iter().last().unwrap())
 }
 
 #[test]
@@ -523,7 +523,7 @@ fn test_justify_content_space_evenly_single_item_column() {
         },
         (20, 5),
     );
-    assert_display_snapshot!(frames.try_iter().last().unwrap())
+    assert_snapshot!(frames.try_iter().last().unwrap())
 }
 
 #[test]
@@ -541,7 +541,7 @@ fn test_justify_content_flexstart_multiple_items_column() {
         },
         (20, 5),
     );
-    assert_display_snapshot!(frames.try_iter().last().unwrap())
+    assert_snapshot!(frames.try_iter().last().unwrap())
 }
 
 #[test]
@@ -559,7 +559,7 @@ fn test_justify_content_flexend_multiple_items_column() {
         },
         (20, 5),
     );
-    assert_display_snapshot!(frames.try_iter().last().unwrap())
+    assert_snapshot!(frames.try_iter().last().unwrap())
 }
 
 #[test]
@@ -577,7 +577,7 @@ fn test_justify_content_center_multiple_items_column() {
         },
         (20, 5),
     );
-    assert_display_snapshot!(frames.try_iter().last().unwrap())
+    assert_snapshot!(frames.try_iter().last().unwrap())
 }
 
 #[test]
@@ -595,7 +595,7 @@ fn test_justify_content_space_between_multiple_items_column() {
         },
         (20, 7),
     );
-    assert_display_snapshot!(frames.try_iter().last().unwrap())
+    assert_snapshot!(frames.try_iter().last().unwrap())
 }
 
 #[test]
@@ -613,7 +613,7 @@ fn test_justify_content_space_around_multiple_items_column() {
         },
         (20, 9),
     );
-    assert_display_snapshot!(frames.try_iter().last().unwrap())
+    assert_snapshot!(frames.try_iter().last().unwrap())
 }
 
 #[test]
@@ -631,7 +631,7 @@ fn test_justify_content_space_evenly_multiple_items_column() {
         },
         (20, 11),
     );
-    assert_display_snapshot!(frames.try_iter().last().unwrap())
+    assert_snapshot!(frames.try_iter().last().unwrap())
 }
 
 #[test]
@@ -649,7 +649,7 @@ fn test_align_items_flexstart_column() {
         },
         (20, 5),
     );
-    assert_display_snapshot!(frames.try_iter().last().unwrap())
+    assert_snapshot!(frames.try_iter().last().unwrap())
 }
 
 #[test]
@@ -667,7 +667,7 @@ fn test_align_items_flexend_column() {
         },
         (20, 5),
     );
-    assert_display_snapshot!(frames.try_iter().last().unwrap())
+    assert_snapshot!(frames.try_iter().last().unwrap())
 }
 
 #[test]
@@ -685,7 +685,7 @@ fn test_align_items_stretch_column() {
         },
         (20, 10),
     );
-    assert_display_snapshot!(frames.try_iter().last().unwrap())
+    assert_snapshot!(frames.try_iter().last().unwrap())
 }
 
 #[test]
@@ -703,7 +703,7 @@ fn test_align_items_center_column() {
         },
         (20, 10),
     );
-    assert_display_snapshot!(frames.try_iter().last().unwrap())
+    assert_snapshot!(frames.try_iter().last().unwrap())
 }
 
 #[test]
@@ -724,7 +724,7 @@ fn test_align_content_flexstart_conlumn() {
         },
         (20, 3),
     );
-    assert_display_snapshot!(tsiv.last_screen());
+    assert_snapshot!(tsiv.last_screen());
 }
 
 #[test]
@@ -745,7 +745,7 @@ fn test_align_content_flexend_conlumn() {
         },
         (20, 3),
     );
-    assert_display_snapshot!(tsiv.last_screen());
+    assert_snapshot!(tsiv.last_screen());
 }
 
 #[test]
@@ -766,7 +766,7 @@ fn test_align_content_center_conlumn() {
         },
         (20, 3),
     );
-    assert_display_snapshot!(tsiv.last_screen());
+    assert_snapshot!(tsiv.last_screen());
 }
 
 #[test]
@@ -787,7 +787,7 @@ fn test_align_content_stretch_conlumn() {
         },
         (20, 3),
     );
-    assert_display_snapshot!(tsiv.last_screen());
+    assert_snapshot!(tsiv.last_screen());
 }
 
 #[test]
@@ -808,7 +808,7 @@ fn test_align_content_space_between_conlumn() {
         },
         (20, 3),
     );
-    assert_display_snapshot!(tsiv.last_screen());
+    assert_snapshot!(tsiv.last_screen());
 }
 
 #[test]
@@ -829,7 +829,7 @@ fn test_align_content_space_around_conlumn() {
         },
         (18, 3),
     );
-    assert_display_snapshot!(tsiv.last_screen());
+    assert_snapshot!(tsiv.last_screen());
 }
 
 #[test]
@@ -846,7 +846,7 @@ fn test_main_axis_gap() {
         },
         (20, 2),
     );
-    assert_display_snapshot!(tsiv.last_screen());
+    assert_snapshot!(tsiv.last_screen());
 }
 
 #[test]
@@ -864,7 +864,7 @@ fn test_main_axis_gap_justify_center() {
         },
         (25, 2),
     );
-    assert_display_snapshot!(tsiv.last_screen());
+    assert_snapshot!(tsiv.last_screen());
 }
 
 #[test]
@@ -882,5 +882,5 @@ fn test_main_axis_gap_justify_space_evenly() {
         },
         (31, 2),
     );
-    assert_display_snapshot!(tsiv.last_screen());
+    assert_snapshot!(tsiv.last_screen());
 }
