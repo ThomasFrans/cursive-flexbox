@@ -1,8 +1,8 @@
 use cursive::{
     theme::{BorderStyle, ColorStyle, Palette, Theme},
-    view::IntoBoxedView,
-    views::{Layer, Panel, TextView},
-    Cursive, CursiveExt,
+    view::{IntoBoxedView, Nameable, Resizable},
+    views::{Button, EditView, Layer, Panel, TextArea, TextView},
+    Cursive, CursiveExt, With,
 };
 
 use cursive_flexbox::prelude::*;
@@ -27,8 +27,12 @@ fn main() {
         ))
         .into_boxed_view(),
         Panel::new(Layer::with_color(
-            TextView::new("I doubt I will be wrapped..."),
-            ColorStyle::back(cursive::theme::BaseColor::Green.dark()),
+            EditView::new()
+                .with(|v| {
+                    v.set_content("I doubt I will be wrapped...");
+                })
+                .min_width(28),
+            ColorStyle::back(cursive::theme::BaseColor::Blue.dark()),
         ))
         .into_boxed_view(),
         Panel::new(Layer::with_color(
@@ -37,16 +41,29 @@ fn main() {
         ))
         .into_boxed_view(),
         Panel::new(Layer::with_color(
-            TextView::new(
-                "And a bigger container\nto test out the alignment\nof items in the main \
-                          axis\na bit better.",
-            ),
-            ColorStyle::back(cursive::theme::BaseColor::Green.dark()),
+            TextArea::new()
+                .with(|v| {
+                    v.set_content(
+                        "And a bigger container\nto test out the alignment\nof items in the main \
+                          axis\na bit better.\n\nEdit me.",
+                    );
+                })
+                .min_width(20),
+            ColorStyle::back(cursive::theme::BaseColor::Blue.dark()),
         ))
         .into_boxed_view(),
         Panel::new(Layer::with_color(
-            TextView::new("And a final item for good luck."),
-            ColorStyle::back(cursive::theme::BaseColor::Green.dark()),
+            Button::new("And a final button for good luck.", |c| {
+                let mut flexbox = c.find_name::<Flexbox>("flexbox").unwrap();
+                let new_align = match flexbox.align_items() {
+                    AlignItems::FlexStart => AlignItems::Center,
+                    AlignItems::Center => AlignItems::FlexEnd,
+                    AlignItems::FlexEnd => AlignItems::Stretch,
+                    AlignItems::Stretch => AlignItems::FlexStart,
+                };
+                flexbox.set_align_items(new_align);
+            }),
+            ColorStyle::back(cursive::theme::BaseColor::Red.dark()),
         ))
         .into_boxed_view(),
     ]);
@@ -77,7 +94,7 @@ fn main() {
     flexbox.set_flex_direction(FlexDirection::Row);
 
     // Add the flexbox to the ui.
-    cursive.add_fullscreen_layer(flexbox);
+    cursive.add_fullscreen_layer(flexbox.with_name("flexbox"));
 
     // Start running the eventloop.
     cursive.run();
